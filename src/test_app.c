@@ -1,0 +1,92 @@
+/* 
+ * Test application for freeDiameter.
+ */
+
+#include "dc.h"
+
+/* Initialize the configuration */
+struct ta_conf * ta_conf = NULL;
+static struct ta_conf _conf;
+static pthread_t ta_stats_th = (pthread_t)NULL;
+
+int ta_conf_handle(char * conffile){
+    return 1;
+}
+
+static int ta_conf_init(void)
+{
+	ta_conf = &_conf;
+	memset(ta_conf, 0, sizeof(struct ta_conf));
+	
+	/* Set the default values */
+	ta_conf->vendor_id  = 999999;		/* Dummy value */
+	ta_conf->appli_id   = 0xffffff;	/* dummy value */
+	ta_conf->cmd_id     = 0xfffffe;	/* Experimental */
+	ta_conf->avp_id     = 0xffffff;	/* dummy value */
+	ta_conf->long_avp_len = 5000;
+	ta_conf->dest_realm = strdup(fd_g_config->cnf_diamrlm);
+	ta_conf->dest_host  = NULL;
+	
+	/* Initialize the mutex */
+	CHECK_POSIX( pthread_mutex_init(&ta_conf->stats_lock, NULL) );
+	
+	return 0;
+}
+
+static void ta_conf_dump(void)
+{
+	if (!TRACE_BOOL(INFO))
+		return;
+	fd_log_debug( "------- app_test configuration dump: ---------");
+	fd_log_debug( " Vendor Id .......... : %u", ta_conf->vendor_id);
+	fd_log_debug( " Application Id ..... : %u", ta_conf->appli_id);
+	fd_log_debug( " Command Id ......... : %u", ta_conf->cmd_id);
+	fd_log_debug( " AVP Id ............. : %u", ta_conf->avp_id);
+	fd_log_debug( " Long AVP Id ........ : %u", ta_conf->long_avp_id);
+	fd_log_debug( " Long AVP len ....... : %zu", ta_conf->long_avp_len);
+	fd_log_debug( " Destination Realm .. : %s", ta_conf->dest_realm ?: "- none -");
+	fd_log_debug( " Destination Host ... : %s", ta_conf->dest_host ?: "- none -");
+	fd_log_debug( "------- /app_test configuration dump ---------");
+}
+
+static struct fd_hook_hdl * hookhdl[2] = { NULL, NULL };
+
+/* entry point */
+int ta_entry(char * conffile)
+{
+    TSDebug(DEBUG_NAME, "ta_entry called. init the diameter based test app.");
+	
+	/* Initialize configuration */
+	CHECK_FCT( ta_conf_init() );
+	
+	/* Parse configuration file */
+	if (conffile != NULL) {
+		CHECK_FCT( ta_conf_handle(conffile) );
+	}
+	
+	TRACE_DEBUG(INFO, "Extension Test_App initialized with configuration: '%s'", conffile);
+	ta_conf_dump();
+	
+	/* Install objects definitions for this test application */
+	CHECK_FCT( ta_dict_init() );
+	
+	/* Start the signal handler thread */
+    CHECK_FCT( ta_cli_init() );
+	
+	/* Advertise the support for the test application in the peer */
+	CHECK_FCT( fd_disp_app_support ( ta_appli, ta_vendor, 1, 0 ) );
+	
+	return 0;
+}
+
+/* Unload */
+void fd_ext_fini(void)
+{
+    ta_cli_fini();
+	if (hookhdl[0])
+		fd_hook_unregister( hookhdl[0] );
+	if (hookhdl[1])
+		fd_hook_unregister( hookhdl[1] );
+	CHECK_FCT_DO( fd_thr_term(&ta_stats_th), );
+	CHECK_POSIX_DO( pthread_mutex_destroy(&ta_conf->stats_lock), );
+}

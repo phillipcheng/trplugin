@@ -1,0 +1,337 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		26B31AE31A83EAFE0065E119 /* dc.c in Sources */ = {isa = PBXBuildFile; fileRef = 26B31AD71A83EAFE0065E119 /* dc.c */; };
+		26B31AE41A83EAFE0065E119 /* Makefile in Sources */ = {isa = PBXBuildFile; fileRef = 26B31AD91A83EAFE0065E119 /* Makefile */; };
+		26B31AE51A83EAFE0065E119 /* ta_cli.c in Sources */ = {isa = PBXBuildFile; fileRef = 26B31ADA1A83EAFE0065E119 /* ta_cli.c */; };
+		26B31AE61A83EAFE0065E119 /* ta_dict.c in Sources */ = {isa = PBXBuildFile; fileRef = 26B31ADC1A83EAFE0065E119 /* ta_dict.c */; };
+		26B31AE71A83EAFE0065E119 /* test_app.c in Sources */ = {isa = PBXBuildFile; fileRef = 26B31ADE1A83EAFE0065E119 /* test_app.c */; };
+		26B31AE81A83EAFE0065E119 /* trplugin.c in Sources */ = {isa = PBXBuildFile; fileRef = 26B31AE01A83EAFE0065E119 /* trplugin.c */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXBuildRule section */
+		265BB0661A7C3753007E37AD /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.lex;
+			fileType = sourcecode.lex;
+			isEditable = 1;
+			outputFiles = (
+			);
+			script = "# $(LEX)";
+		};
+		265BB0801A7D4F89007E37AD /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			fileType = sourcecode.lex;
+			isEditable = 1;
+			outputFiles = (
+			);
+			script = "# $(LEX)\n/opt/bin/flex";
+		};
+		265BB0811A7D509D007E37AD /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			fileType = sourcecode.yacc;
+			isEditable = 1;
+			outputFiles = (
+			);
+			script = "# $(YACC)\n/usr/bin/bison -d";
+		};
+/* End PBXBuildRule section */
+
+/* Begin PBXFileReference section */
+		266710FB1A7C113C00A140E9 /* trplugin */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = trplugin; sourceTree = BUILT_PRODUCTS_DIR; };
+		26B31AD11A83EAFE0065E119 /* dc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dc.h; sourceTree = "<group>"; };
+		26B31AD21A83EAFE0065E119 /* utarray.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utarray.h; sourceTree = "<group>"; };
+		26B31AD31A83EAFE0065E119 /* uthash.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = uthash.h; sourceTree = "<group>"; };
+		26B31AD41A83EAFE0065E119 /* utlist.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utlist.h; sourceTree = "<group>"; };
+		26B31AD51A83EAFE0065E119 /* utstring.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utstring.h; sourceTree = "<group>"; };
+		26B31AD71A83EAFE0065E119 /* dc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = dc.c; sourceTree = "<group>"; };
+		26B31AD91A83EAFE0065E119 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
+		26B31ADA1A83EAFE0065E119 /* ta_cli.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ta_cli.c; sourceTree = "<group>"; };
+		26B31ADC1A83EAFE0065E119 /* ta_dict.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ta_dict.c; sourceTree = "<group>"; };
+		26B31ADE1A83EAFE0065E119 /* test_app.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = test_app.c; sourceTree = "<group>"; };
+		26B31AE01A83EAFE0065E119 /* trplugin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = trplugin.c; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		266710F21A7C113C00A140E9 = {
+			isa = PBXGroup;
+			children = (
+				26B31AD01A83EAFE0065E119 /* include */,
+				26B31AD61A83EAFE0065E119 /* src */,
+				266710FC1A7C113C00A140E9 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		266710FC1A7C113C00A140E9 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				266710FB1A7C113C00A140E9 /* trplugin */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		26B31AD01A83EAFE0065E119 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				26B31AD11A83EAFE0065E119 /* dc.h */,
+				26B31AD21A83EAFE0065E119 /* utarray.h */,
+				26B31AD31A83EAFE0065E119 /* uthash.h */,
+				26B31AD41A83EAFE0065E119 /* utlist.h */,
+				26B31AD51A83EAFE0065E119 /* utstring.h */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
+		26B31AD61A83EAFE0065E119 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				26B31AD71A83EAFE0065E119 /* dc.c */,
+				26B31AD91A83EAFE0065E119 /* Makefile */,
+				26B31ADA1A83EAFE0065E119 /* ta_cli.c */,
+				26B31ADC1A83EAFE0065E119 /* ta_dict.c */,
+				26B31ADE1A83EAFE0065E119 /* test_app.c */,
+				26B31AE01A83EAFE0065E119 /* trplugin.c */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		266710FA1A7C113C00A140E9 /* trplugin */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 266711021A7C113C00A140E9 /* Build configuration list for PBXNativeTarget "trplugin" */;
+			buildPhases = (
+				266710F71A7C113C00A140E9 /* Sources */,
+			);
+			buildRules = (
+				265BB0811A7D509D007E37AD /* PBXBuildRule */,
+				265BB0801A7D4F89007E37AD /* PBXBuildRule */,
+				265BB0661A7C3753007E37AD /* PBXBuildRule */,
+			);
+			dependencies = (
+			);
+			name = trplugin;
+			productName = trplugin;
+			productReference = 266710FB1A7C113C00A140E9 /* trplugin */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		266710F31A7C113C00A140E9 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0610;
+				ORGANIZATIONNAME = "Cheng Yi";
+				TargetAttributes = {
+					266710FA1A7C113C00A140E9 = {
+						CreatedOnToolsVersion = 6.1.1;
+					};
+				};
+			};
+			buildConfigurationList = 266710F61A7C113C00A140E9 /* Build configuration list for PBXProject "trplugin" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 266710F21A7C113C00A140E9;
+			productRefGroup = 266710FC1A7C113C00A140E9 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				266710FA1A7C113C00A140E9 /* trplugin */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		266710F71A7C113C00A140E9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				26B31AE81A83EAFE0065E119 /* trplugin.c in Sources */,
+				26B31AE41A83EAFE0065E119 /* Makefile in Sources */,
+				26B31AE31A83EAFE0065E119 /* dc.c in Sources */,
+				26B31AE61A83EAFE0065E119 /* ta_dict.c in Sources */,
+				26B31AE71A83EAFE0065E119 /* test_app.c in Sources */,
+				26B31AE51A83EAFE0065E119 /* ta_cli.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		266711001A7C113C00A140E9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/opt/ats/include,
+					/opt/fd/include,
+					"/Users/chengyi/Documents/trafficserver-5.2.0/lib/ts",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+				);
+				LIBRARY_SEARCH_PATHS = /Users/chengyi/Documents/ats/lib;
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		266711011A7C113C00A140E9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/opt/ats/include,
+					/opt/fd/include,
+					"/Users/chengyi/Documents/trafficserver-5.2.0/lib/ts",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+				);
+				LIBRARY_SEARCH_PATHS = /Users/chengyi/Documents/ats/lib;
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		266711031A7C113C00A140E9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/opt/ats/include,
+					/opt/fd/include,
+					/opt/local/include,
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+				);
+				"HEADER_SEARCH_PATHS[arch=*]" = (
+					"$(inherited)",
+					/opt/ats/include,
+					/opt/fd/include,
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+				);
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
+				"LIBRARY_SEARCH_PATHS[arch=*]" = "$(inherited)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				USER_HEADER_SEARCH_PATHS = "/opt/ats/include /opt/fd/include";
+			};
+			name = Debug;
+		};
+		266711041A7C113C00A140E9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/opt/ats/include,
+					/opt/fd/include,
+					/opt/local/include,
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+				);
+				"HEADER_SEARCH_PATHS[arch=*]" = (
+					"$(inherited)",
+					/opt/ats/include,
+					/opt/fd/include,
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+				);
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
+				"LIBRARY_SEARCH_PATHS[arch=*]" = "$(inherited)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				USER_HEADER_SEARCH_PATHS = "/opt/ats/include /opt/fd/include";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		266710F61A7C113C00A140E9 /* Build configuration list for PBXProject "trplugin" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				266711001A7C113C00A140E9 /* Debug */,
+				266711011A7C113C00A140E9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		266711021A7C113C00A140E9 /* Build configuration list for PBXNativeTarget "trplugin" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				266711031A7C113C00A140E9 /* Debug */,
+				266711041A7C113C00A140E9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 266710F31A7C113C00A140E9 /* Project object */;
+}
