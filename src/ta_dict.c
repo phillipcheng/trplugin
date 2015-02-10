@@ -1,15 +1,21 @@
-
-/* Install the dictionary objects */
-
 #include "dc.h"
 
 struct dict_object * ta_vendor = NULL;
 struct dict_object * ta_appli = NULL;
 struct dict_object * ta_cmd_r = NULL;
 struct dict_object * ta_cmd_a = NULL;
+
+//test
 struct dict_object * ta_avp = NULL;
 struct dict_object * ta_avp_long = NULL;
+//real
+struct dict_object * ta_avp_optype = NULL; //start, stop, update
+struct dict_object * ta_avp_userid = NULL; //
+struct dict_object * ta_avp_requestQuota = NULL;
+struct dict_object * ta_avp_usedQuota = NULL;
+struct dict_object * ta_avp_grantedQuota = NULL;
 
+//system
 struct dict_object * ta_sess_id = NULL;
 struct dict_object * ta_origin_host = NULL;
 struct dict_object * ta_origin_realm = NULL;
@@ -75,6 +81,61 @@ int ta_dict_init(void)
         CHECK_FCT(fd_dict_new( fd_g_config->cnf_dict, DICT_AVP, &data, NULL, &ta_avp_long));
     }
     
+    //create ta_optype //in all
+    {
+        struct dict_avp_data data;
+        data.avp_code = 400000;
+        data.avp_vendor = ta_conf->vendor_id;
+        data.avp_name = "OpType-AVP";
+        data.avp_flag_mask = AVP_FLAG_VENDOR;
+        data.avp_flag_val = AVP_FLAG_VENDOR;
+        data.avp_basetype = AVP_TYPE_INTEGER32;
+        CHECK_FCT(fd_dict_new( fd_g_config->cnf_dict, DICT_AVP, &data, NULL, &ta_avp_optype));
+    }
+    //create user_id //in req
+    {
+        struct dict_avp_data data;
+        data.avp_code = 400001;
+        data.avp_vendor = ta_conf->vendor_id;
+        data.avp_name = "UserId-AVP";
+        data.avp_flag_mask = AVP_FLAG_VENDOR;
+        data.avp_flag_val = AVP_FLAG_VENDOR;
+        data.avp_basetype = AVP_TYPE_OCTETSTRING;
+        CHECK_FCT(fd_dict_new( fd_g_config->cnf_dict, DICT_AVP, &data, NULL, &ta_avp_userid));
+    }
+    //create requestQuota //in req
+    {
+        struct dict_avp_data data;
+        data.avp_code = 400002;
+        data.avp_vendor = ta_conf->vendor_id;
+        data.avp_name = "requestQuota-AVP";
+        data.avp_flag_mask = AVP_FLAG_VENDOR;
+        data.avp_flag_val = AVP_FLAG_VENDOR;
+        data.avp_basetype = AVP_TYPE_UNSIGNED64;
+        CHECK_FCT(fd_dict_new( fd_g_config->cnf_dict, DICT_AVP, &data, NULL, &ta_avp_requestQuota));
+    }
+    //create usedQuota //in req
+    {
+        struct dict_avp_data data;
+        data.avp_code = 400003;
+        data.avp_vendor = ta_conf->vendor_id;
+        data.avp_name = "usedQuota-AVP";
+        data.avp_flag_mask = AVP_FLAG_VENDOR;
+        data.avp_flag_val = AVP_FLAG_VENDOR;
+        data.avp_basetype = AVP_TYPE_UNSIGNED64;
+        CHECK_FCT(fd_dict_new( fd_g_config->cnf_dict, DICT_AVP, &data, NULL, &ta_avp_usedQuota));
+    }
+    //create grantedQuota //in rsp
+    {
+        struct dict_avp_data data;
+        data.avp_code = 400004;
+        data.avp_vendor = ta_conf->vendor_id;
+        data.avp_name = "grantedQuota-AVP";
+        data.avp_flag_mask = AVP_FLAG_VENDOR;
+        data.avp_flag_val = AVP_FLAG_VENDOR;
+        data.avp_basetype = AVP_TYPE_UNSIGNED64;
+        CHECK_FCT(fd_dict_new( fd_g_config->cnf_dict, DICT_AVP, &data, NULL, &ta_avp_grantedQuota));
+    }
     /* Now resolve some other useful AVPs */
     CHECK_FCT( fd_dict_search( fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME, "Session-Id", &ta_sess_id, ENOENT) );
     CHECK_FCT( fd_dict_search( fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME, "Origin-Host", &ta_origin_host, ENOENT) );
@@ -98,10 +159,16 @@ int ta_dict_init(void)
         CHECK_FCT(fd_dict_new( fd_g_config->cnf_dict, DICT_RULE, &data, ta_cmd_a, NULL));
         
         data.rule_position = RULE_REQUIRED;
-        /* Test-AVP is mandatory */
-        data.rule_avp = ta_avp;
+        data.rule_avp = ta_avp_optype;
         CHECK_FCT(fd_dict_new( fd_g_config->cnf_dict, DICT_RULE, &data, ta_cmd_r, NULL));
-        CHECK_FCT(fd_dict_new( fd_g_config->cnf_dict, DICT_RULE, &data, ta_cmd_a, NULL));
+        //data.rule_avp = ta_avp_userid;
+        //CHECK_FCT(fd_dict_new( fd_g_config->cnf_dict, DICT_RULE, &data, ta_cmd_r, NULL));
+        //data.rule_avp = ta_avp_requestQuota;
+        //CHECK_FCT(fd_dict_new( fd_g_config->cnf_dict, DICT_RULE, &data, ta_cmd_r, NULL));
+        //data.rule_avp = ta_avp_usedQuota;
+        //CHECK_FCT(fd_dict_new( fd_g_config->cnf_dict, DICT_RULE, &data, ta_cmd_r, NULL));
+        //data.rule_avp = ta_avp_grantedQuota;
+        //CHECK_FCT(fd_dict_new( fd_g_config->cnf_dict, DICT_RULE, &data, ta_cmd_a, NULL));
         
         /* idem for Origin Host and Realm */
         data.rule_avp = ta_origin_host;

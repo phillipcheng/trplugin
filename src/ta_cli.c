@@ -5,57 +5,23 @@
  * This is just for the purpose of checking everything went OK.
  */
 
-#include "dc.h"
-#include <stdio.h>
+#include "trplugin.h"
 
-static struct session_handler * ta_cli_reg = NULL;
-
-struct sess_state {
-	int32_t		randval;	/* a random value to store in Test-AVP */
-	struct timespec ts;		/* Time of sending the message */
-} ;
+#define TEST_APP_SID_OPT  "app_test"
 
 /* Cb called when an answer is received */
 void ta_cb_ans(void * data, struct msg ** msg)
 {
-	struct sess_state * mi = NULL;
 	struct timespec ts;
-	struct session * sess;
 	struct avp * avp;
 	struct avp_hdr * hdr;
-	unsigned long dur;
 	int error = 0;
+    DiamTxnData* dtxn_data = data;
 	
 	CHECK_SYS_DO( clock_gettime(CLOCK_REALTIME, &ts), return );
 
-	/* Search the session, retrieve its data */
-	{
-		int new;
-		CHECK_FCT_DO( fd_msg_sess_get(fd_g_config->cnf_dict, *msg, &sess, &new), return );
-		ASSERT( new == 0 );
-		
-		CHECK_FCT_DO( fd_sess_state_retrieve( ta_cli_reg, sess, &mi ), return );
-		TRACE_DEBUG( INFO, "%p", mi);
-		
-	}
-	
 	/* Now log content of the answer */
 	fprintf(stderr, "RECV ");
-	
-	/* Value of Test-AVP */
-	CHECK_FCT_DO( fd_msg_search_avp ( *msg, ta_avp, &avp), return );
-	if (avp) {
-		CHECK_FCT_DO( fd_msg_avp_hdr( avp, &hdr ), return );
-		if (hdr->avp_value->i32 == mi->randval) {
-			fprintf(stderr, "%x (%s) ", hdr->avp_value->i32, "Ok");
-		} else {
-			fprintf(stderr, "%x (%s) ", hdr->avp_value->i32, "PROBLEM");
-			error++;
-		}
-	} else {
-		fprintf(stderr, "no_Test-AVP ");
-		error++;
-	}
 	
 	/* Value of Result Code */
 	CHECK_FCT_DO( fd_msg_search_avp ( *msg, ta_res_code, &avp), return );
@@ -65,7 +31,7 @@ void ta_cb_ans(void * data, struct msg ** msg)
 		if (hdr->avp_value->i32 != 2001)
 			error++;
 	} else {
-		fprintf(stderr, "no_Result-Code ");
+		fprintf(stderr, "no_Result-Code \n");
 		error++;
 	}
 	
@@ -73,9 +39,9 @@ void ta_cb_ans(void * data, struct msg ** msg)
 	CHECK_FCT_DO( fd_msg_search_avp ( *msg, ta_origin_host, &avp), return );
 	if (avp) {
 		CHECK_FCT_DO( fd_msg_avp_hdr( avp, &hdr ), return );
-		fprintf(stderr, "From '%.*s' ", (int)hdr->avp_value->os.len, hdr->avp_value->os.data);
+		fprintf(stderr, "From '%.*s' \n", (int)hdr->avp_value->os.len, hdr->avp_value->os.data);
 	} else {
-		fprintf(stderr, "no_Origin-Host ");
+		fprintf(stderr, "no_Origin-Host \n");
 		error++;
 	}
 	
@@ -85,94 +51,79 @@ void ta_cb_ans(void * data, struct msg ** msg)
 		CHECK_FCT_DO( fd_msg_avp_hdr( avp, &hdr ), return );
 		fprintf(stderr, "('%.*s') ", (int)hdr->avp_value->os.len, hdr->avp_value->os.data);
 	} else {
-		fprintf(stderr, "no_Origin-Realm ");
+		fprintf(stderr, "no_Origin-Realm \n");
 		error++;
 	}
-	
-	CHECK_POSIX_DO( pthread_mutex_lock(&ta_conf->stats_lock), );
-	dur = ((ts.tv_sec - mi->ts.tv_sec) * 1000000) + ((ts.tv_nsec - mi->ts.tv_nsec) / 1000);
-	if (ta_conf->stats.nb_recv) {
-		/* Ponderate in the avg */
-		ta_conf->stats.avg = (ta_conf->stats.avg * ta_conf->stats.nb_recv + dur) / (ta_conf->stats.nb_recv + 1);
-		/* Min, max */
-		if (dur < ta_conf->stats.shortest)
-			ta_conf->stats.shortest = dur;
-		if (dur > ta_conf->stats.longest)
-			ta_conf->stats.longest = dur;
-	} else {
-		ta_conf->stats.shortest = dur;
-		ta_conf->stats.longest = dur;
-		ta_conf->stats.avg = dur;
-	}
-	
-	if (error)
-		ta_conf->stats.nb_errs++;
-	else 
-		ta_conf->stats.nb_recv++;
-	
-	CHECK_POSIX_DO( pthread_mutex_unlock(&ta_conf->stats_lock), );
-	
-	/* Display how long it took */
-	if (ts.tv_nsec > mi->ts.tv_nsec) {
-		fprintf(stderr, "in %d.%06ld sec", 
-				(int)(ts.tv_sec - mi->ts.tv_sec),
-				(long)(ts.tv_nsec - mi->ts.tv_nsec) / 1000);
-	} else {
-		fprintf(stderr, "in %d.%06ld sec", 
-				(int)(ts.tv_sec + 1 - mi->ts.tv_sec),
-				(long)(1000000000 + ts.tv_nsec - mi->ts.tv_nsec) / 1000);
-	}
-	fprintf(stderr, "\n");
-	fflush(stderr);
-	
-    DiamTxnData* pdacb = data;
-    //do the callback depends on the result code
-    if (error>0){
-        http_shortcut_cb(pdacb->txnp, pdacb->contp, FLAG_AUTH_FAILED, RSP_REASON_VAL_NOUSER);
-    }else{
-        http_continue_cb(pdacb->txnp, pdacb->contp);
-    }
     
-	/* Free the message */
+    if (dtxn_data!=NULL){
+        if (dtxn_data->reqType!=d_stop){
+            struct avp * src = NULL;
+            struct avp_hdr * hdr = NULL;
+            //get the granted quota
+            CHECK_FCT_DO( fd_msg_search_avp ( *msg, ta_avp_grantedQuota, &src), return );
+            CHECK_FCT_DO( fd_msg_avp_hdr( src, &hdr ), return  );
+            if (hdr->avp_value!=NULL){
+                dtxn_data->grantedQuota = hdr->avp_value->u64;
+                if (dtxn_data->grantedQuota<dtxn_data->thisTimeNeed){
+                    dtxn_data->flag = FLAG_AUTH_FAILED;
+                    //TODO, define/reuse the result type/code
+                    dtxn_data->errmsg = RSP_REASON_VAL_NOBAL;
+                }else{
+                    dtxn_data->flag = FLAG_AUTH_SUCC;
+                }
+                if (dtxn_data->reqType==d_start){
+                    start_session_cb(dtxn_data);
+                }else if (dtxn_data->reqType==d_update){
+                    update_session_cb(dtxn_data);
+                }
+            }else{
+                TSDebug(DEBUG_NAME, "fatal processing recieve msg. no granted quota AVP found in ans msg.");
+            }
+        }else{
+            end_session_cb(dtxn_data);
+        }
+    }else{
+        TSDebug(DEBUG_NAME, "fatal processing recieve msg. dtxn_data is NULL.");
+    }
+	
+    //Free the message, it will free the session associated with it
 	CHECK_FCT_DO(fd_msg_free(*msg), return);
 	*msg = NULL;
-	
-	free(mi);
-    free(pdacb);
-	
+
 	return;
 }
 
 /* Create a test message */
-void ta_cli_test_message(DiamTxnData * cbdata)
+void d_cli_send_msg(DiamTxnData * cbdata)
 {
 	struct msg * req = NULL;
 	struct avp * avp;
 	union avp_value val;
-	struct sess_state * mi = NULL, *svg;
 	struct session *sess = NULL;
-	
-	TSDebug(DEBUG_NAME, "Creating a new message for sending.");
-	
-	/* Create the request */
+    
+	//create the request
 	CHECK_FCT_DO( fd_msg_new( ta_cmd_r, MSGFL_ALLOC_ETEID, &req ), goto out );
-	
-	/* Create a new session */
-	#define TEST_APP_SID_OPT  "app_test"
-	CHECK_FCT_DO( fd_msg_new_session( req, (os0_t)TEST_APP_SID_OPT, CONSTSTRLEN(TEST_APP_SID_OPT) ), goto out );
-	CHECK_FCT_DO( fd_msg_sess_get(fd_g_config->cnf_dict, req, &sess, NULL), goto out );
-	
-	/* Create the random value to store with the session */
-	mi = malloc(sizeof(struct sess_state));
-	if (mi == NULL) {
-		fd_log_debug("malloc failed: %s", strerror(errno));
-		goto out;
-	}
-	
-	mi->randval = (int32_t)random();
-	
-	/* Now set all AVPs values */
-	
+
+    TSDebug(DEBUG_NAME, "Creating a new message for sending.\n");
+    if (cbdata->reqType==d_start){
+        // Create a new request-session
+        CHECK_FCT_DO( fd_msg_new_session( req, (os0_t)TEST_APP_SID_OPT, CONSTSTRLEN(TEST_APP_SID_OPT) ), goto out );
+        //set diameter session id in the DiamTxnData
+        CHECK_FCT_DO( fd_msg_sess_get(fd_g_config->cnf_dict, req, &sess, NULL), goto out );
+        os0_t sid;
+        size_t len;
+        fd_sess_getsid(sess, &sid, &len);
+        cbdata->d1sid=os0dup_int(sid, len);
+    }else{
+        //init the message with given session id
+        fd_msg_avp_new( ta_sess_id, 0, &avp);
+        memset(&val, 0, sizeof(val));
+        val.os.data = (os0_t)cbdata->d1sid;
+        val.os.len  = strlen(cbdata->d1sid);
+        fd_msg_avp_setvalue( avp, &val );
+        fd_msg_avp_add( req, MSG_BRW_FIRST_CHILD, avp );
+    }
+    TSDebug(DEBUG_NAME, "Set the Destination-Realm AVP \n");
 	/* Set the Destination-Realm AVP */
 	{
 		CHECK_FCT_DO( fd_msg_avp_new ( ta_dest_realm, 0, &avp ), goto out  );
@@ -181,7 +132,7 @@ void ta_cli_test_message(DiamTxnData * cbdata)
 		CHECK_FCT_DO( fd_msg_avp_setvalue( avp, &val ), goto out  );
 		CHECK_FCT_DO( fd_msg_avp_add( req, MSG_BRW_LAST_CHILD, avp ), goto out  );
 	}
-	
+	TSDebug(DEBUG_NAME, "Set the Destination-Host AVP \n");
 	/* Set the Destination-Host AVP if needed*/
 	if (ta_conf->dest_host) {
 		CHECK_FCT_DO( fd_msg_avp_new ( ta_dest_host, 0, &avp ), goto out  );
@@ -190,50 +141,48 @@ void ta_cli_test_message(DiamTxnData * cbdata)
 		CHECK_FCT_DO( fd_msg_avp_setvalue( avp, &val ), goto out  );
 		CHECK_FCT_DO( fd_msg_avp_add( req, MSG_BRW_LAST_CHILD, avp ), goto out  );
 	}
-	
+	TSDebug(DEBUG_NAME, "Set Origin-Host & Origin-Realm \n");
 	/* Set Origin-Host & Origin-Realm */
 	CHECK_FCT_DO( fd_msg_add_origin ( req, 0 ), goto out  );
 	
-	/* Set the User-Name AVP if needed*/
-	if (ta_conf->user_name) {
-		CHECK_FCT_DO( fd_msg_avp_new ( ta_user_name, 0, &avp ), goto out  );
-		val.os.data = (unsigned char *)(ta_conf->user_name);
-		val.os.len  = strlen(ta_conf->user_name);
+    //set optype
+    {
+        TSDebug(DEBUG_NAME, "Set Optype \n");
+        CHECK_FCT_DO( fd_msg_avp_new ( ta_avp_optype, 0, &avp ), goto out  );
+        val.i32 = cbdata->reqType;
+        CHECK_FCT_DO( fd_msg_avp_setvalue( avp, &val ), goto out  );
+        CHECK_FCT_DO( fd_msg_avp_add( req, MSG_BRW_LAST_CHILD, avp ), goto out  );
+    }
+    if (cbdata->reqType==d_start){
+        //Set userid
+        TSDebug(DEBUG_NAME, "set the userid avp in req.");
+		CHECK_FCT_DO( fd_msg_avp_new ( ta_avp_userid, 0, &avp ), goto out  );
+        val.os.len = strlen(cbdata->userId);
+        val.os.data = (unsigned char *)cbdata->userId;
 		CHECK_FCT_DO( fd_msg_avp_setvalue( avp, &val ), goto out  );
 		CHECK_FCT_DO( fd_msg_avp_add( req, MSG_BRW_LAST_CHILD, avp ), goto out  );
 	}
-	
-	/* Set the Test-AVP AVP */
-	{
-		CHECK_FCT_DO( fd_msg_avp_new ( ta_avp, 0, &avp ), goto out  );
-		val.i32 = mi->randval;
-		CHECK_FCT_DO( fd_msg_avp_setvalue( avp, &val ), goto out  );
-		CHECK_FCT_DO( fd_msg_avp_add( req, MSG_BRW_LAST_CHILD, avp ), goto out  );
-	}
-	
-	/* Set the Test-Payload-AVP AVP */
-	if (ta_conf->long_avp_id) {
-		int l;
-		CHECK_FCT_DO( fd_msg_avp_new ( ta_avp_long, 0, &avp ), goto out  );
-		CHECK_MALLOC_DO( val.os.data = malloc(ta_conf->long_avp_len), goto out);
-		val.os.len = ta_conf->long_avp_len;
-		for (l=0; l < ta_conf->long_avp_len; l++)
-			val.os.data[l]=l;
-		CHECK_FCT_DO( fd_msg_avp_setvalue( avp, &val ), goto out  );
-		free(val.os.data);
-		CHECK_FCT_DO( fd_msg_avp_add( req, MSG_BRW_LAST_CHILD, avp ), goto out  );
-	}
-	
-	CHECK_SYS_DO( clock_gettime(CLOCK_REALTIME, &mi->ts), goto out );
-	
-	/* Keep a pointer to the session data for debug purpose, in real life we would not need it */
-	svg = mi;
-	
-	/* Store this value in the session */
-	CHECK_FCT_DO( fd_sess_state_store ( ta_cli_reg, sess, &mi ), goto out ); 
+    //set requestQuota
+    {
+        CHECK_FCT_DO( fd_msg_avp_new ( ta_avp_requestQuota, 0, &avp ), goto out  );
+        uint64_t reqSize = cbdata->requestQuota > MIN_REQUEST_QUOTA? cbdata->requestQuota:MIN_REQUEST_QUOTA;
+        val.u64 = reqSize;
+        CHECK_FCT_DO( fd_msg_avp_setvalue( avp, &val ), goto out  );
+        CHECK_FCT_DO( fd_msg_avp_add( req, MSG_BRW_LAST_CHILD, avp ), goto out  );
+        TSDebug(DEBUG_NAME, "set the requestedQuota avp in req.");
+    }
+    //set usedQuota
+    {
+        CHECK_FCT_DO( fd_msg_avp_new ( ta_avp_usedQuota, 0, &avp ), goto out  );
+        val.u64 = cbdata->used;
+        CHECK_FCT_DO( fd_msg_avp_setvalue( avp, &val ), goto out  );
+        CHECK_FCT_DO( fd_msg_avp_add( req, MSG_BRW_LAST_CHILD, avp ), goto out  );
+        TSDebug(DEBUG_NAME, "set the usedQuota avp in req.");
+    }
 	
 	/* Log sending the message */
-	TSDebug(DEBUG_NAME, "SEND %x to '%s' (%s)\n", svg->randval, ta_conf->dest_realm, ta_conf->dest_host?:"-" );
+	TSDebug(DEBUG_NAME, "SEND %s,%llu to '%s' (%s)\n", cbdata->userId, cbdata->requestQuota,
+            ta_conf->dest_realm, ta_conf->dest_host?:"-" );
 		
 	/* Send the request */
 	CHECK_FCT_DO( fd_msg_send( &req, ta_cb_ans, cbdata), goto out );

@@ -22,8 +22,6 @@ int dcinit(int argc, const char * argv[])
         return ret;
     }
     
-    TSDebug("debug-dcinit", "dc init!\n");
-    
     /* Initialize the core library */
     ret = fd_core_initialize();
     if (ret != 0) {
@@ -101,7 +99,7 @@ static int main_cmdline(int argc, char *argv[])
     
     /* Loop on arguments */
     while (1) {
-        c = getopt_long (argc, argv, "hc:dql:M:", long_options, &option_index);
+        c = getopt_long (argc, argv, "hF:f:c:dql:M:", long_options, &option_index);
         if (c == -1)
             break;	/* Exit from the loop.  */
         
