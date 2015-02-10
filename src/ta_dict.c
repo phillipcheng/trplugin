@@ -5,9 +5,6 @@ struct dict_object * ta_appli = NULL;
 struct dict_object * ta_cmd_r = NULL;
 struct dict_object * ta_cmd_a = NULL;
 
-//test
-struct dict_object * ta_avp = NULL;
-struct dict_object * ta_avp_long = NULL;
 //real
 struct dict_object * ta_avp_optype = NULL; //start, stop, update
 struct dict_object * ta_avp_userid = NULL; //
@@ -55,30 +52,6 @@ int ta_dict_init(void)
         data.cmd_name = "Test-Answer";
         data.cmd_flag_val  = CMD_FLAG_PROXIABLE;
         CHECK_FCT(fd_dict_new( fd_g_config->cnf_dict, DICT_COMMAND, &data, ta_appli, &ta_cmd_a));
-    }
-    
-    /* Create the Test AVP */
-    {
-        struct dict_avp_data data;
-        data.avp_code = ta_conf->avp_id;
-        data.avp_vendor = ta_conf->vendor_id;
-        data.avp_name = "Test-AVP";
-        data.avp_flag_mask = AVP_FLAG_VENDOR;
-        data.avp_flag_val = AVP_FLAG_VENDOR;
-        data.avp_basetype = AVP_TYPE_INTEGER32;
-        CHECK_FCT(fd_dict_new( fd_g_config->cnf_dict, DICT_AVP, &data, NULL, &ta_avp));
-    }
-    
-    /* Create the Test Payload AVP */
-    if (ta_conf->long_avp_id) {
-        struct dict_avp_data data;
-        data.avp_code = ta_conf->long_avp_id;
-        data.avp_vendor = ta_conf->vendor_id;
-        data.avp_name = "Test-Payload-AVP";
-        data.avp_flag_mask = AVP_FLAG_VENDOR;
-        data.avp_flag_val = AVP_FLAG_VENDOR;
-        data.avp_basetype = AVP_TYPE_OCTETSTRING;
-        CHECK_FCT(fd_dict_new( fd_g_config->cnf_dict, DICT_AVP, &data, NULL, &ta_avp_long));
     }
     
     //create ta_optype //in all
