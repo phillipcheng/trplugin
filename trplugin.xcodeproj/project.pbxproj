@@ -7,46 +7,32 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		26532C1D1A86F27600053103 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 26532C1C1A86F27600053103 /* main.c */; };
+		26532C201A86FC5300053103 /* libtsutil.5.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 26793BF41A86ED7C005E46B6 /* libtsutil.5.dylib */; };
+		26532C211A86FC5300053103 /* libtsmgmt.5.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 26793BF31A86ED7C005E46B6 /* libtsmgmt.5.dylib */; };
+		26532C221A86FC5300053103 /* libtsconfig.5.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 26793BF21A86ED7C005E46B6 /* libtsconfig.5.dylib */; };
+		26532C231A86FC6500053103 /* libfdcore.1.2.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 26793BF91A86EDA8005E46B6 /* libfdcore.1.2.0.dylib */; };
+		26532C241A86FC6500053103 /* libfdproto.1.2.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 26793BF81A86EDA8005E46B6 /* libfdproto.1.2.0.dylib */; };
+		26532C271A86FF4800053103 /* definition.c in Sources */ = {isa = PBXBuildFile; fileRef = 26532C251A86FF4800053103 /* definition.c */; };
+		269697951A8833BA00FF45AD /* trplugin.c in Sources */ = {isa = PBXBuildFile; fileRef = 26B31AE01A83EAFE0065E119 /* trplugin.c */; };
 		26B31AE31A83EAFE0065E119 /* dc.c in Sources */ = {isa = PBXBuildFile; fileRef = 26B31AD71A83EAFE0065E119 /* dc.c */; };
-		26B31AE41A83EAFE0065E119 /* Makefile in Sources */ = {isa = PBXBuildFile; fileRef = 26B31AD91A83EAFE0065E119 /* Makefile */; };
 		26B31AE51A83EAFE0065E119 /* ta_cli.c in Sources */ = {isa = PBXBuildFile; fileRef = 26B31ADA1A83EAFE0065E119 /* ta_cli.c */; };
 		26B31AE61A83EAFE0065E119 /* ta_dict.c in Sources */ = {isa = PBXBuildFile; fileRef = 26B31ADC1A83EAFE0065E119 /* ta_dict.c */; };
 		26B31AE71A83EAFE0065E119 /* test_app.c in Sources */ = {isa = PBXBuildFile; fileRef = 26B31ADE1A83EAFE0065E119 /* test_app.c */; };
-		26B31AE81A83EAFE0065E119 /* trplugin.c in Sources */ = {isa = PBXBuildFile; fileRef = 26B31AE01A83EAFE0065E119 /* trplugin.c */; };
+		26F7AF0C1A8642B10070EAAE /* ta_serv.c in Sources */ = {isa = PBXBuildFile; fileRef = 26F7AF0B1A8642B10070EAAE /* ta_serv.c */; };
 /* End PBXBuildFile section */
 
-/* Begin PBXBuildRule section */
-		265BB0661A7C3753007E37AD /* PBXBuildRule */ = {
-			isa = PBXBuildRule;
-			compilerSpec = com.apple.compilers.lex;
-			fileType = sourcecode.lex;
-			isEditable = 1;
-			outputFiles = (
-			);
-			script = "# $(LEX)";
-		};
-		265BB0801A7D4F89007E37AD /* PBXBuildRule */ = {
-			isa = PBXBuildRule;
-			compilerSpec = com.apple.compilers.proxy.script;
-			fileType = sourcecode.lex;
-			isEditable = 1;
-			outputFiles = (
-			);
-			script = "# $(LEX)\n/opt/bin/flex";
-		};
-		265BB0811A7D509D007E37AD /* PBXBuildRule */ = {
-			isa = PBXBuildRule;
-			compilerSpec = com.apple.compilers.proxy.script;
-			fileType = sourcecode.yacc;
-			isEditable = 1;
-			outputFiles = (
-			);
-			script = "# $(YACC)\n/usr/bin/bison -d";
-		};
-/* End PBXBuildRule section */
-
 /* Begin PBXFileReference section */
+		26532C1C1A86F27600053103 /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
+		26532C251A86FF4800053103 /* definition.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = definition.c; sourceTree = "<group>"; };
 		266710FB1A7C113C00A140E9 /* trplugin */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = trplugin; sourceTree = BUILT_PRODUCTS_DIR; };
+		26793BF21A86ED7C005E46B6 /* libtsconfig.5.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libtsconfig.5.dylib; path = ../../../../../../opt/ats/lib/libtsconfig.5.dylib; sourceTree = "<group>"; };
+		26793BF31A86ED7C005E46B6 /* libtsmgmt.5.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libtsmgmt.5.dylib; path = ../../../../../../opt/ats/lib/libtsmgmt.5.dylib; sourceTree = "<group>"; };
+		26793BF41A86ED7C005E46B6 /* libtsutil.5.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libtsutil.5.dylib; path = ../../../../../../opt/ats/lib/libtsutil.5.dylib; sourceTree = "<group>"; };
+		26793BF81A86EDA8005E46B6 /* libfdproto.1.2.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libfdproto.1.2.0.dylib; path = ../../../../../../opt/fd/lib/libfdproto.1.2.0.dylib; sourceTree = "<group>"; };
+		26793BF91A86EDA8005E46B6 /* libfdcore.1.2.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libfdcore.1.2.0.dylib; path = ../../../../../../opt/fd/lib/libfdcore.1.2.0.dylib; sourceTree = "<group>"; };
+		26793BFE1A86F1AD005E46B6 /* ta_cli_dummy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ta_cli_dummy.c; sourceTree = "<group>"; };
+		26793BFF1A86F1AD005E46B6 /* ta_serv_dummy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ta_serv_dummy.c; sourceTree = "<group>"; };
 		26B31AD11A83EAFE0065E119 /* dc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dc.h; sourceTree = "<group>"; };
 		26B31AD21A83EAFE0065E119 /* utarray.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utarray.h; sourceTree = "<group>"; };
 		26B31AD31A83EAFE0065E119 /* uthash.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = uthash.h; sourceTree = "<group>"; };
@@ -58,12 +44,34 @@
 		26B31ADC1A83EAFE0065E119 /* ta_dict.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ta_dict.c; sourceTree = "<group>"; };
 		26B31ADE1A83EAFE0065E119 /* test_app.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = test_app.c; sourceTree = "<group>"; };
 		26B31AE01A83EAFE0065E119 /* trplugin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = trplugin.c; sourceTree = "<group>"; };
+		26F7AF0B1A8642B10070EAAE /* ta_serv.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ta_serv.c; sourceTree = "<group>"; };
+		26F7AF0D1A8653180070EAAE /* trplugin.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = trplugin.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		26793BF11A86ED1C005E46B6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				26532C231A86FC6500053103 /* libfdcore.1.2.0.dylib in Frameworks */,
+				26532C241A86FC6500053103 /* libfdproto.1.2.0.dylib in Frameworks */,
+				26532C201A86FC5300053103 /* libtsutil.5.dylib in Frameworks */,
+				26532C211A86FC5300053103 /* libtsmgmt.5.dylib in Frameworks */,
+				26532C221A86FC5300053103 /* libtsconfig.5.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		266710F21A7C113C00A140E9 = {
 			isa = PBXGroup;
 			children = (
+				26793BF81A86EDA8005E46B6 /* libfdproto.1.2.0.dylib */,
+				26793BF91A86EDA8005E46B6 /* libfdcore.1.2.0.dylib */,
+				26793BF21A86ED7C005E46B6 /* libtsconfig.5.dylib */,
+				26793BF31A86ED7C005E46B6 /* libtsmgmt.5.dylib */,
+				26793BF41A86ED7C005E46B6 /* libtsutil.5.dylib */,
 				26B31AD01A83EAFE0065E119 /* include */,
 				26B31AD61A83EAFE0065E119 /* src */,
 				266710FC1A7C113C00A140E9 /* Products */,
@@ -81,6 +89,7 @@
 		26B31AD01A83EAFE0065E119 /* include */ = {
 			isa = PBXGroup;
 			children = (
+				26F7AF0D1A8653180070EAAE /* trplugin.h */,
 				26B31AD11A83EAFE0065E119 /* dc.h */,
 				26B31AD21A83EAFE0065E119 /* utarray.h */,
 				26B31AD31A83EAFE0065E119 /* uthash.h */,
@@ -93,12 +102,17 @@
 		26B31AD61A83EAFE0065E119 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				26532C1C1A86F27600053103 /* main.c */,
+				26793BFE1A86F1AD005E46B6 /* ta_cli_dummy.c */,
+				26793BFF1A86F1AD005E46B6 /* ta_serv_dummy.c */,
+				26F7AF0B1A8642B10070EAAE /* ta_serv.c */,
 				26B31AD71A83EAFE0065E119 /* dc.c */,
 				26B31AD91A83EAFE0065E119 /* Makefile */,
 				26B31ADA1A83EAFE0065E119 /* ta_cli.c */,
 				26B31ADC1A83EAFE0065E119 /* ta_dict.c */,
 				26B31ADE1A83EAFE0065E119 /* test_app.c */,
 				26B31AE01A83EAFE0065E119 /* trplugin.c */,
+				26532C251A86FF4800053103 /* definition.c */,
 			);
 			path = src;
 			sourceTree = "<group>";
@@ -111,11 +125,10 @@
 			buildConfigurationList = 266711021A7C113C00A140E9 /* Build configuration list for PBXNativeTarget "trplugin" */;
 			buildPhases = (
 				266710F71A7C113C00A140E9 /* Sources */,
+				26793BF11A86ED1C005E46B6 /* Frameworks */,
+				26532C1F1A86F66000053103 /* ShellScript */,
 			);
 			buildRules = (
-				265BB0811A7D509D007E37AD /* PBXBuildRule */,
-				265BB0801A7D4F89007E37AD /* PBXBuildRule */,
-				265BB0661A7C3753007E37AD /* PBXBuildRule */,
 			);
 			dependencies = (
 			);
@@ -155,17 +168,35 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		26532C1F1A86F66000053103 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "install_name_tool -change libfdcore.6.dylib /opt/fd/lib/libfdcore.6.dylib /Users/chengyi/Library/Developer/Xcode/DerivedData/trafficreport-hholpfoifwudwtbrunjwljpcyjuf/Build/Products/Debug/trplugin\ninstall_name_tool -change libfdproto.6.dylib /opt/fd/lib/libfdproto.6.dylib /Users/chengyi/Library/Developer/Xcode/DerivedData/trafficreport-hholpfoifwudwtbrunjwljpcyjuf/Build/Products/Debug/trplugin";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		266710F71A7C113C00A140E9 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				26B31AE81A83EAFE0065E119 /* trplugin.c in Sources */,
-				26B31AE41A83EAFE0065E119 /* Makefile in Sources */,
+				269697951A8833BA00FF45AD /* trplugin.c in Sources */,
 				26B31AE31A83EAFE0065E119 /* dc.c in Sources */,
 				26B31AE61A83EAFE0065E119 /* ta_dict.c in Sources */,
+				26F7AF0C1A8642B10070EAAE /* ta_serv.c in Sources */,
 				26B31AE71A83EAFE0065E119 /* test_app.c in Sources */,
 				26B31AE51A83EAFE0065E119 /* ta_cli.c in Sources */,
+				26532C271A86FF4800053103 /* definition.c in Sources */,
+				26532C1D1A86F27600053103 /* main.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -279,8 +310,26 @@
 					/opt/fd/include,
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 				);
-				LIBRARY_SEARCH_PATHS = "$(inherited)";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/opt/ats/lib,
+					/opt/fd/lib,
+				);
 				"LIBRARY_SEARCH_PATHS[arch=*]" = "$(inherited)";
+				OTHER_LDFLAGS = "";
+				"OTHER_LDFLAGS[arch=*]" = (
+					"-g",
+					"-L/opt/ats/lib",
+					"-L/opt/fd/lib",
+					"-ltsconfig",
+					"-ltsmgmt",
+					"-ltsutil",
+					"-lfdcore",
+					"-lfdproto",
+					"-flat_namespace",
+					"-undefined",
+					suppress,
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				USER_HEADER_SEARCH_PATHS = "/opt/ats/include /opt/fd/include";
 			};
@@ -303,8 +352,26 @@
 					/opt/fd/include,
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 				);
-				LIBRARY_SEARCH_PATHS = "$(inherited)";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/opt/ats/lib,
+					/opt/fd/lib,
+				);
 				"LIBRARY_SEARCH_PATHS[arch=*]" = "$(inherited)";
+				OTHER_LDFLAGS = "";
+				"OTHER_LDFLAGS[arch=*]" = (
+					"-g",
+					"-L/opt/ats/lib",
+					"-L/opt/fd/lib",
+					"-ltsconfig",
+					"-ltsmgmt",
+					"-ltsutil",
+					"-lfdcore",
+					"-lfdproto",
+					"-flat_namespace",
+					"-undefined",
+					suppress,
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				USER_HEADER_SEARCH_PATHS = "/opt/ats/include /opt/fd/include";
 			};
