@@ -58,7 +58,7 @@ extern struct ta_conf * ta_conf;
 typedef struct {
     char    sid[40];//
     uint64_t grantedQuota;
-    uint64_t leftQuota;
+    int64_t leftQuota; //can be less the zero for over-use
     char* d1sid;//diameter 1 session id
     UT_hash_handle hh; /* makes this structure hashable */
 }UserSession;
