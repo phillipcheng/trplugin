@@ -202,7 +202,22 @@ void update_session_cb(DiamTxnData* dtxn_data){
     dtxn_free(dtxn_data);
 }
 
+void post_update_session(TSHttpTxn txnp, TSCont contp){
+    long clientRspHdrBytes = TSHttpTxnClientRespHdrBytesGet(txnp);
+    long clientRspBdyBytes = TSHttpTxnClientRespBodyBytesGet(txnp);
+    long len = clientRspHdrBytes+clientRspBdyBytes;
+    TxnData* txnData = TSContDataGet(contp);
+    UserSession* us = find_user_session(txnData->sessionid);
+    if (us==NULL){
+        TSDebug(DEBUG_NAME, "post-update session, session not found for id:%s", txnData->sessionid);
+    }else{
+        TSDebug(DEBUG_NAME, "post-update session id:%s, usage:%ld", txnData->sessionid, len);
+        us->leftQuota-=len;
+    }
+}
+
 void update_session(TSHttpTxn txnp, TSCont contp, long len, bool req){
+    
     TxnData* txnData = TSContDataGet(contp);
     UserSession* us = find_user_session(txnData->sessionid);
     if (us==NULL){
@@ -214,6 +229,7 @@ void update_session(TSHttpTxn txnp, TSCont contp, long len, bool req){
             TSHttpTxnReenable(txnp, TS_EVENT_HTTP_CONTINUE);
         }
     }else{
+        TSDebug(DEBUG_NAME, "user session id:%s, is req: %d, usage:%ld", txnData->sessionid, req, len);
         if (us->leftQuota>=len){
             us->leftQuota-=len;
             if (req){
@@ -279,6 +295,21 @@ static void handle_request(TSHttpTxn txnp, TSCont contp){
     return;
 }
 
+void debugBytes(TSHttpTxn txnp, int event){
+    long clientReqHdrBytes = TSHttpTxnClientReqHdrBytesGet(txnp);
+    long clientReqBdyBytes = TSHttpTxnClientReqBodyBytesGet(txnp);
+    long clientRspHdrBytes = TSHttpTxnClientRespHdrBytesGet(txnp);
+    long clientRspBdyBytes = TSHttpTxnClientRespBodyBytesGet(txnp);
+    long serverReqHdrBytes = TSHttpTxnServerReqHdrBytesGet(txnp);
+    long serverReqBdyBytes = TSHttpTxnServerReqBodyBytesGet(txnp);
+    long serverRspHdrBytes = TSHttpTxnServerRespHdrBytesGet(txnp);
+    long serverRspBdyBytes = TSHttpTxnServerRespBodyBytesGet(txnp);
+    TSDebug(DEBUG_NAME, "at event:%d, clientReqHdrBytes:%ld, clientReqBdyBytes:%ld, clientRspHdrBytes:%ld, clientRspBdyBytes:%ld, \
+            serverReqHdrBytes:%ld, serverReqBdyBytes:%ld, serverRspHdrBytes:%ld, serverRspBdyBytes:%ld",
+            event, clientReqHdrBytes, clientReqBdyBytes, clientRspHdrBytes, clientRspBdyBytes,
+            serverReqHdrBytes, serverReqBdyBytes, serverRspHdrBytes, serverRspBdyBytes);
+}
+
 static void handle_response(TSHttpTxn txnp, TSCont contp) {
     TSMBuffer bufp;
     TSMLoc hdr_loc;
@@ -315,6 +346,7 @@ static int tr_plugin(TSCont contp, TSEvent event, void *edata)
     TSHttpTxn txnp = (TSHttpTxn) edata;
     TxnData *txn_data = TSContDataGet(contp);
     
+    debugBytes(txnp, event);
     switch (event) {
         case TS_EVENT_HTTP_READ_REQUEST_HDR:
             handle_request(txnp, contp);
@@ -323,6 +355,7 @@ static int tr_plugin(TSCont contp, TSEvent event, void *edata)
             handle_response(txnp, contp);
             return 0;
         case TS_EVENT_HTTP_TXN_CLOSE:
+            post_update_session(txnp, contp);
             txn_data_free(txn_data);
             TSContDestroy(contp);
             TSHttpTxnReenable(txnp, TS_EVENT_HTTP_CONTINUE);
