@@ -288,6 +288,7 @@ static void handle_request(TSHttpTxn txnp, TSCont contp){
             end_session(txnp, contp);
         }else{
             TSDebug(DEBUG_NAME, "userid header not found for end session request.");
+            txnData->flag = FLAG_AUTH_FAILED;//not normal anymore
             http_req_shortcut_cb(txnp, contp, FLAG_AUTH_FAILED, RSP_REASON_VAL_REQHEAD_NOUSERIP);
         }
     }
@@ -318,7 +319,7 @@ static void handle_response(TSHttpTxn txnp, TSCont contp) {
         TxnData *txn_data = TSContDataGet(contp);
         if (txn_data!=NULL){
             TSDebug(DEBUG_NAME, "txn_data flag:%d", txn_data->flag);
-            if (txn_data->flag == FLAG_AUTH_FAILED){
+            if (txn_data->flag == FLAG_AUTH_FAILED){//this can be start, normal or stop requests
                 TSHttpHdrStatusSet(bufp, hdr_loc, TS_HTTP_STATUS_UNAUTHORIZED);
                 setHeaderAttr(bufp, hdr_loc, RSP_HEADER_REASON, txn_data->errmsg);
             }else if (txn_data->flag==FLAG_AUTH_SUCC){
