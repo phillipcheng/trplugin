@@ -141,9 +141,8 @@ void start_session(TSHttpTxn txnp, TSCont contp){
     DiamTxnData* dtxnData = dtxn_alloc(txnp, contp, true, d_start);
     TxnData* txnData=TSContDataGet(contp);
     dtxnData->requestQuota = MIN_REQUEST_QUOTA;
-    dtxnData->userId = malloc(strlen(txnData->user));
+    dtxnData->userId = strdup(txnData->user);
     dtxnData->used=0;
-    strcpy(dtxnData->userId, txnData->user);
     d_cli_send_msg(dtxnData);
 }
 
@@ -202,16 +201,14 @@ void update_session_cb(DiamTxnData* dtxn_data){
     dtxn_free(dtxn_data);
 }
 
-void post_update_session(TSHttpTxn txnp, TSCont contp){
+void postprocess_any_request(TSHttpTxn txnp, TSCont contp){
     long clientRspHdrBytes = TSHttpTxnClientRespHdrBytesGet(txnp);
     long clientRspBdyBytes = TSHttpTxnClientRespBodyBytesGet(txnp);
     long len = clientRspHdrBytes+clientRspBdyBytes;
     TxnData* txnData = TSContDataGet(contp);
     UserSession* us = find_user_session(txnData->sessionid);
-    if (us==NULL){
-        TSDebug(DEBUG_NAME, "post-update session, session not found for id:%s", txnData->sessionid);
-    }else{
-        TSDebug(DEBUG_NAME, "post-update session id:%s, usage:%ld", txnData->sessionid, len);
+    if (us!=NULL){
+        TSDebug(DEBUG_NAME, "postprocess any request, session id:%s, usage:%ld", txnData->sessionid, len);
         us->leftQuota-=len;
     }
 }
@@ -356,7 +353,7 @@ static int tr_plugin(TSCont contp, TSEvent event, void *edata)
             handle_response(txnp, contp);
             return 0;
         case TS_EVENT_HTTP_TXN_CLOSE:
-            post_update_session(txnp, contp);
+            postprocess_any_request(txnp, contp);
             txn_data_free(txn_data);
             TSContDestroy(contp);
             TSHttpTxnReenable(txnp, TS_EVENT_HTTP_CONTINUE);

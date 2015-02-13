@@ -48,13 +48,16 @@ UserSession* user_sessions = NULL;
 UserSession* user_session_alloc(char* userid){
     //now sid is userid
     UserSession* s = malloc(sizeof(UserSession));
-    strncpy(s->sid, userid, strlen(userid));
+    s->sid=strdup(userid);
     s->grantedQuota=0;
     s->leftQuota=0;
     return s;
 }
 
 void user_session_free(UserSession *data){
+    if (data->sid!=NULL){
+        free(data->sid);
+    }
     if (data->d1sid!=NULL){
         free(data->d1sid);
     }
@@ -79,6 +82,7 @@ void delete_user_session(char* sid){
     }
 }
 
+//for the simulated server side usage session
 UsageServerSession * usageserver_session_alloc(){
     UsageServerSession* s = malloc(sizeof(UsageServerSession));
     s->leftQuota=0;

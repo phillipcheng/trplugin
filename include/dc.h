@@ -56,10 +56,10 @@ extern struct ta_conf * ta_conf;
 
 //user session structure, global user-sessions handler and methods
 typedef struct {
-    char    sid[40];//
-    uint64_t grantedQuota;
+    char*   sid;//
+    uint64_t    grantedQuota;
     int64_t leftQuota; //can be less the zero for over-use
-    char* d1sid;//diameter 1 session id
+    char*   d1sid;//diameter 1 session id
     UT_hash_handle hh; /* makes this structure hashable */
 }UserSession;
 extern UserSession* user_sessions;
