@@ -184,10 +184,6 @@ void d_cli_send_msg(DiamTxnData * cbdata)
 	/* Send the request */
 	CHECK_FCT_DO( fd_msg_send( &req, ta_cb_ans, cbdata), goto out );
 
-	/* Increment the counter */
-	CHECK_POSIX_DO( pthread_mutex_lock(&ta_conf->stats_lock), );
-	ta_conf->stats.nb_sent++;
-	CHECK_POSIX_DO( pthread_mutex_unlock(&ta_conf->stats_lock), );
 
 out:
 	return;

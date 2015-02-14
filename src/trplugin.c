@@ -179,6 +179,7 @@ void update_session_cb(DiamTxnData* dtxn_data){
     TxnData* txnData = TSContDataGet(dtxn_data->contp);
     //get session data
     UserSession* us = find_user_session(txnData->sessionid);
+    TSDebug(DEBUG_NAME, "before lock user session: %s", us->sid);
     pthread_mutex_lock(&us->us_lock);
     us->grantedQuota = dtxn_data->grantedQuota; //new grant
     us->leftQuota = us->grantedQuota-us->errorUsed;//deduct the volume used while waiting for response
@@ -211,6 +212,7 @@ void update_session_cb(DiamTxnData* dtxn_data){
             TSHttpTxnReenable(dtxn_data->txnp, TS_EVENT_HTTP_CONTINUE);
         }
     }
+    TSDebug(DEBUG_NAME, "before unlock user session: %s", us->sid);
     pthread_mutex_unlock(&us->us_lock);
     dtxn_free(dtxn_data);
 }
@@ -222,18 +224,18 @@ void postprocess_any_request(TSHttpTxn txnp, TSCont contp){
     TxnData* txnData = TSContDataGet(contp);
     UserSession* us = find_user_session(txnData->sessionid);
     if (us!=NULL){
+        TSDebug(DEBUG_NAME, "before lock user session: %s", us->sid);
         pthread_mutex_lock(&us->us_lock);
-        if (us!=NULL){
-            if (us->dserver_error){
-                us->errorUsed+=len;
-                TSDebug(DEBUG_NAME, "postprocess any request, session id:%s, usage this time:%ld, errorUsed:%llu",
-                        txnData->sessionid, len, us->errorUsed);
-            }else{
-                us->leftQuota-=len;
-                TSDebug(DEBUG_NAME, "postprocess any request, session id:%s, usage this time:%ld, leftQuota:%lld",
-                        txnData->sessionid, len, us->leftQuota);
-            }
+        if (us->dserver_error){
+            us->errorUsed+=len;
+            TSDebug(DEBUG_NAME, "postprocess any request, session id:%s, usage this time:%ld, errorUsed:%llu",
+                    txnData->sessionid, len, us->errorUsed);
+        }else{
+            us->leftQuota-=len;
+            TSDebug(DEBUG_NAME, "postprocess any request, session id:%s, usage this time:%ld, leftQuota:%lld",
+                    txnData->sessionid, len, us->leftQuota);
         }
+        TSDebug(DEBUG_NAME, "before unlock user session: %s", us->sid);
         pthread_mutex_unlock(&us->us_lock);
     }else{
         TSDebug(DEBUG_NAME, "postprocess any request, session not found for %s",
@@ -254,6 +256,7 @@ void update_session(TSHttpTxn txnp, TSCont contp, long len, bool req){
         }
     }else{
         TSDebug(DEBUG_NAME, "user session id:%s, is req: %d, usage:%ld", txnData->sessionid, req, len);
+        TSDebug(DEBUG_NAME, "before lock user session: %s", us->sid);
         pthread_mutex_lock(&us->us_lock);
         if (us->leftQuota>=len || us->dserver_error || us->pending_d_req>0){
             //let it pass under one of these conditions
@@ -292,6 +295,7 @@ void update_session(TSHttpTxn txnp, TSCont contp, long len, bool req){
                 us->pending_d_req=1;
             }
         }
+        TSDebug(DEBUG_NAME, "before unlock user session: %s", us->sid);
         pthread_mutex_unlock(&us->us_lock);
     }
 }
@@ -362,6 +366,19 @@ void debugBytes(TSHttpTxn txnp, int event){
             serverReqHdrBytes, serverReqBdyBytes, serverRspHdrBytes, serverRspBdyBytes);
 }
 
+const char* FLAG_STR_SUCCESS="auth_success";
+const char* FLAG_STR_FAILED="auth_failed";
+const char* FLAG_STR_NORMAL="normal";
+const char* getFlagString(int flag){
+    if (flag==FLAG_AUTH_FAILED){
+        return FLAG_STR_FAILED;
+    }else if (flag==FLAG_AUTH_SUCC){
+        return FLAG_STR_SUCCESS;
+    }else {
+        return FLAG_STR_NORMAL;
+    }
+}
+
 static void handle_response(TSHttpTxn txnp, TSCont contp) {
     TSMBuffer bufp;
     TSMLoc hdr_loc;
@@ -369,7 +386,7 @@ static void handle_response(TSHttpTxn txnp, TSCont contp) {
     if (TSHttpTxnClientRespGet(txnp, &bufp, &hdr_loc) == TS_SUCCESS) {
         TxnData *txn_data = TSContDataGet(contp);
         if (txn_data!=NULL){
-            TSDebug(DEBUG_NAME, "txn_data flag:%d", txn_data->flag);
+            TSDebug(DEBUG_NAME, "handle rsp: txn_data flag:%s", getFlagString(txn_data->flag));
             if (txn_data->flag == FLAG_AUTH_FAILED){//this can be start, normal or stop requests
                 if (txn_data->reqType==u_stop){
                     TSHttpHdrStatusSet(bufp, hdr_loc, TS_HTTP_STATUS_OK);
