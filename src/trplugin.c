@@ -298,8 +298,8 @@ void update_session(TSHttpTxn txnp, TSCont contp, long len, bool req){
                 dtxn_data->used = us->grantedQuota-us->leftQuota;
                 dtxn_data->d1sid = strdup(us->d1sid);
                 dtxn_data->thisTimeNeed = len;
+                us->pending_d_req=1;//set this before send, if after, send's callback will set this to 0 and then this will reset it to 1
                 d_cli_send_msg(dtxn_data);
-                us->pending_d_req=1;
             }
         }
     }
