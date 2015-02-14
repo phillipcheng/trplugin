@@ -97,11 +97,11 @@ static int ta_tr_cb( struct msg ** msg, struct avp * avp, struct session * sess,
 	/* Set the Origin-Host, Origin-Realm, Result-Code AVPs */
 	CHECK_FCT( fd_msg_rescode_set( ans, "DIAMETER_SUCCESS", NULL, NULL, 1 ) );
     
-	/* Send the answer */
-	CHECK_FCT( fd_msg_send( msg, NULL, NULL ) );
-    
     //save the session state
     fd_sess_state_store(ta_cli_reg, sess, &mi);
+    
+    /* Send the answer */
+	CHECK_FCT( fd_msg_send( msg, NULL, NULL ) );
     
 	/* Add this value to the stats */
 	CHECK_POSIX_DO( pthread_mutex_lock(&ta_conf->stats_lock), );
