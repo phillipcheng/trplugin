@@ -63,7 +63,7 @@ char* getHeaderAttr(TSMBuffer bufp, TSMLoc hdr_loc, const char* name, int length
         TSstrlcpy(val, cmdval, cmdval_length+1);
         *(val+cmdval_length+1)='\0';
         TSHandleMLocRelease(bufp, hdr_loc, cmdfield_loc);
-        TSDebug(DEBUG_NAME, "get attribute:%s val:%s", name, val);
+        //TSDebug(DEBUG_NAME, "get attribute:%s val:%s", name, val);
         return val;
     }else{
         return NULL;
@@ -83,7 +83,7 @@ char* getClientIp(TSHttpTxn txnp){
 }
 
 void setHeaderAttr(TSMBuffer bufp, TSMLoc hdr_loc, const char* name, const char* val){
-    TSDebug(DEBUG_NAME, "set attribute:%s val:%s", name, val);
+    //TSDebug(DEBUG_NAME, "set attribute:%s val:%s", name, val);
     TSMLoc field_loc;
     TSMimeHdrFieldCreate(bufp, hdr_loc, &field_loc);
     TSMimeHdrFieldNameSet(bufp, hdr_loc, field_loc, name, (int)strlen(name));
@@ -169,10 +169,7 @@ void end_session(TSHttpTxn txnp, TSCont contp){
     }else{
         DiamTxnData* dtxn_data = dtxn_alloc(txnp, contp, true, d_stop);
         dtxn_data->used = us->grantedQuota-us->leftQuota;
-        int len = strlen(us->d1sid)+1;
-        dtxn_data->d1sid = malloc(len);
-        strncpy(dtxn_data->d1sid, us->d1sid, len);
-        *(dtxn_data->d1sid+len)='\0';
+        dtxn_data->d1sid = strdup(us->d1sid);
         TSDebug(DEBUG_NAME, "diameter session in user session is %s", dtxn_data->d1sid);
         d_cli_send_msg(dtxn_data);
     }
@@ -182,13 +179,15 @@ void update_session_cb(DiamTxnData* dtxn_data){
     TxnData* txnData = TSContDataGet(dtxn_data->contp);
     //get session data
     UserSession* us = find_user_session(txnData->sessionid);
+    pthread_mutex_lock(&us->us_lock);
     us->grantedQuota = dtxn_data->grantedQuota; //new grant
-    us->leftQuota = us->grantedQuota;
+    us->leftQuota = us->grantedQuota-us->errorUsed;//deduct the volume used while waiting for response
+    us->pending_d_req=0;//rsp comming back
     if (dtxn_data->flag==FLAG_AUTH_SUCC || dtxn_data->dserver_error){
         if (!dtxn_data->dserver_error){
             //allow
             us->leftQuota = us->grantedQuota - dtxn_data->thisTimeNeed;
-            TSDebug(DEBUG_NAME, "req: %d: update session: has quota: latest quota: %llu, quota left: %llu, this time usage: %llu",
+            TSDebug(DEBUG_NAME, "req: %d: update session: has quota: latest quota: %llu, quota left: %lld, this time usage: %llu",
                     dtxn_data->httpReq, us->grantedQuota, us->leftQuota, dtxn_data->thisTimeNeed);
             if (dtxn_data->httpReq){
                 http_req_continue_cb(dtxn_data->txnp, dtxn_data->contp);
@@ -203,7 +202,7 @@ void update_session_cb(DiamTxnData* dtxn_data){
         }
     }else{
         //block
-        TSDebug(DEBUG_NAME, "req: %d, use session: no quota: left:%llu, ask: %llu",
+        TSDebug(DEBUG_NAME, "req: %d, use session: no quota: left:%lld, ask: %llu",
                 dtxn_data->httpReq, us->leftQuota, dtxn_data->thisTimeNeed);
         if (dtxn_data->httpReq){
             http_req_shortcut_cb(dtxn_data->txnp, dtxn_data->contp, FLAG_AUTH_FAILED, RSP_REASON_VAL_NOBAL);
@@ -212,6 +211,7 @@ void update_session_cb(DiamTxnData* dtxn_data){
             TSHttpTxnReenable(dtxn_data->txnp, TS_EVENT_HTTP_CONTINUE);
         }
     }
+    pthread_mutex_unlock(&us->us_lock);
     dtxn_free(dtxn_data);
 }
 
@@ -222,15 +222,22 @@ void postprocess_any_request(TSHttpTxn txnp, TSCont contp){
     TxnData* txnData = TSContDataGet(contp);
     UserSession* us = find_user_session(txnData->sessionid);
     if (us!=NULL){
-        if (us->dserver_error){
-            us->errorUsed+=len;
-            TSDebug(DEBUG_NAME, "postprocess any request, session id:%s, usage this time:%ld, errorUsed:%llu",
-                    txnData->sessionid, len, us->errorUsed);
-        }else{
-            us->leftQuota-=len;
-            TSDebug(DEBUG_NAME, "postprocess any request, session id:%s, usage this time:%ld, leftQuota:%llu",
-                    txnData->sessionid, len, us->leftQuota);
+        pthread_mutex_lock(&us->us_lock);
+        if (us!=NULL){
+            if (us->dserver_error){
+                us->errorUsed+=len;
+                TSDebug(DEBUG_NAME, "postprocess any request, session id:%s, usage this time:%ld, errorUsed:%llu",
+                        txnData->sessionid, len, us->errorUsed);
+            }else{
+                us->leftQuota-=len;
+                TSDebug(DEBUG_NAME, "postprocess any request, session id:%s, usage this time:%ld, leftQuota:%lld",
+                        txnData->sessionid, len, us->leftQuota);
+            }
         }
+        pthread_mutex_unlock(&us->us_lock);
+    }else{
+        TSDebug(DEBUG_NAME, "postprocess any request, session not found for %s",
+                txnData->sessionid);
     }
 }
 
@@ -247,8 +254,10 @@ void update_session(TSHttpTxn txnp, TSCont contp, long len, bool req){
         }
     }else{
         TSDebug(DEBUG_NAME, "user session id:%s, is req: %d, usage:%ld", txnData->sessionid, req, len);
-        if (us->leftQuota>=len || us->dserver_error){
-            //let it through
+        pthread_mutex_lock(&us->us_lock);
+        if (us->leftQuota>=len || us->dserver_error || us->pending_d_req>0){
+            //let it pass under one of these conditions
+            //1. has enough quota. 2.diameter server is not responding 3.there is pending d_request (under asking)
             if (us->leftQuota>=len){
                 us->leftQuota-=len;
             }else{
@@ -271,13 +280,17 @@ void update_session(TSHttpTxn txnp, TSCont contp, long len, bool req){
                     TSHttpTxnReenable(txnp, TS_EVENT_HTTP_CONTINUE);
                 }
             }else{
-                //last time still grants, send diameter update request
+                //last time server still grants, and I am the 1st to ask
+                //send diameter update request asking quota again
+                //ASSERT(us->leftQuota<len && us->grantedQuota>0 && !us->dserver_error && us->pending_d_req==0);
                 DiamTxnData* dtxn_data = dtxn_alloc(txnp, contp, req, d_update);
                 dtxn_data->used = us->grantedQuota-us->leftQuota;
                 dtxn_data->d1sid = strdup(us->d1sid);
                 d_cli_send_msg(dtxn_data);
+                us->pending_d_req=1;
             }
         }
+        pthread_mutex_unlock(&us->us_lock);
     }
 }
 
@@ -299,6 +312,7 @@ static void handle_request(TSHttpTxn txnp, TSCont contp){
     const char* cmdval = getHeaderAttr(bufp, hdr_loc, HEADER_CMD, HEADER_CMD_LEN);
     TSDebug(DEBUG_NAME, "cmd value:%s", cmdval);
     if (cmdval==NULL){//this is normal request, interim
+        txnData->reqType = u_use;
         long l_req_len =TSHttpTxnClientReqHdrBytesGet(txnp)+TSHttpTxnClientReqBodyBytesGet(txnp);
         txnData->sessionid = getHeaderAttr(bufp, hdr_loc, HEADER_SESSIONID, HEADER_SESSIONID_LEN);
         if (txnData->sessionid!=NULL){
@@ -308,6 +322,7 @@ static void handle_request(TSHttpTxn txnp, TSCont contp){
             http_req_shortcut_cb(txnp, contp, FLAG_AUTH_FAILED, RSP_REASON_VAL_REQHEAD_NOUSERIP);
         }
     }else if (strcmp(HEADER_CMDVAL_START, cmdval)==0){
+        txnData->reqType = u_start;
         txnData->user = getHeaderAttr(bufp, hdr_loc, HEADER_USERID, HEADER_USERID_LEN);
         if (txnData->user!=NULL){
             start_session(txnp, contp);
@@ -316,11 +331,12 @@ static void handle_request(TSHttpTxn txnp, TSCont contp){
             http_req_shortcut_cb(txnp, contp, FLAG_AUTH_FAILED, RSP_REASON_VAL_REQHEAD_NOUSERIP);
         }
     }else if (strcmp(HEADER_CMDVAL_STOP, cmdval)==0){
+        txnData->reqType = u_stop;
         txnData->sessionid = getHeaderAttr(bufp, hdr_loc, HEADER_SESSIONID, HEADER_SESSIONID_LEN);
         if (txnData->sessionid!=NULL){
             end_session(txnp, contp);
         }else{
-            TSDebug(DEBUG_NAME, "userid header not found for end session request.");
+            TSDebug(DEBUG_NAME, "sessionid header not found for end session request.");
             txnData->flag = FLAG_AUTH_FAILED;//not normal anymore
             http_req_shortcut_cb(txnp, contp, FLAG_AUTH_FAILED, RSP_REASON_VAL_REQHEAD_NOUSERIP);
         }
@@ -353,8 +369,12 @@ static void handle_response(TSHttpTxn txnp, TSCont contp) {
         if (txn_data!=NULL){
             TSDebug(DEBUG_NAME, "txn_data flag:%d", txn_data->flag);
             if (txn_data->flag == FLAG_AUTH_FAILED){//this can be start, normal or stop requests
-                TSHttpHdrStatusSet(bufp, hdr_loc, TS_HTTP_STATUS_UNAUTHORIZED);
-                setHeaderAttr(bufp, hdr_loc, RSP_HEADER_REASON, txn_data->errmsg);
+                if (txn_data->reqType==u_stop){
+                    TSHttpHdrStatusSet(bufp, hdr_loc, TS_HTTP_STATUS_OK);
+                }else{
+                    TSHttpHdrStatusSet(bufp, hdr_loc, TS_HTTP_STATUS_UNAUTHORIZED);
+                    setHeaderAttr(bufp, hdr_loc, RSP_HEADER_REASON, txn_data->errmsg);
+                }
             }else if (txn_data->flag==FLAG_AUTH_SUCC){
                 TSHttpHdrStatusSet(bufp, hdr_loc, TS_HTTP_STATUS_OK);
                 setHeaderAttr(bufp, hdr_loc, HEADER_SESSIONID, txn_data->sessionid);

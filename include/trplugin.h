@@ -20,14 +20,16 @@
 extern const int FLAG_AUTH_SUCC;
 extern const int FLAG_AUTH_FAILED;
 extern const int FLAG_NORMAL;
-
+typedef enum {u_start=1, u_use=2, u_stop=3} u_req_type;
 //context data for txn (req, rsp), put in the continuation for http response processor to get
 typedef struct {
     int flag; //indicate whether the authentication succeed or not
     const char* errmsg; //the text reason of failure
     char* user;
     char* sessionid;
+    u_req_type reqType;//user req type: start, use, stop
 } TxnData;
+
 //context data for diameter txn (req, rsp), put in the diameter session for diameter response processor to get
 typedef struct {
     TSHttpTxn txnp;

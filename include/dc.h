@@ -19,7 +19,7 @@
 #include "uthash.h"
 
 typedef enum { false, true } bool;
-typedef enum {d_start=1, d_update=2, d_stop=3} d_req_type;
+typedef enum {d_start=1, d_update=2, d_stop=3} d_req_type;//diameter request op type
 
 extern const int DC_CLIENT;
 extern const int DC_SERVER;
@@ -60,9 +60,11 @@ typedef struct {
     uint64_t    grantedQuota;
     int64_t leftQuota; //can be less the zero for over-use
     char*   d1sid;//diameter 1 session id
-    UT_hash_handle hh; /* makes this structure hashable */
     bool dserver_error;
     int64_t errorUsed;//used when the dserver is down
+    pthread_mutex_t		us_lock;//lock for this user session
+    uint32_t    pending_d_req;//the number of pending diameter req
+    UT_hash_handle hh; /* makes this structure hashable */
 }UserSession;
 extern UserSession* user_sessions;
 UserSession * user_session_alloc(char* userid);

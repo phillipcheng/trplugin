@@ -127,7 +127,6 @@ void d_cli_send_msg(DiamTxnData * cbdata)
         fd_msg_avp_setvalue( avp, &val );
         fd_msg_avp_add( req, MSG_BRW_FIRST_CHILD, avp );
     }
-    TSDebug(DEBUG_NAME, "Set the Destination-Realm AVP \n");
 	/* Set the Destination-Realm AVP */
 	{
 		CHECK_FCT_DO( fd_msg_avp_new ( ta_dest_realm, 0, &avp ), goto out  );
@@ -136,7 +135,6 @@ void d_cli_send_msg(DiamTxnData * cbdata)
 		CHECK_FCT_DO( fd_msg_avp_setvalue( avp, &val ), goto out  );
 		CHECK_FCT_DO( fd_msg_avp_add( req, MSG_BRW_LAST_CHILD, avp ), goto out  );
 	}
-	TSDebug(DEBUG_NAME, "Set the Destination-Host AVP \n");
 	/* Set the Destination-Host AVP if needed*/
 	if (ta_conf->dest_host) {
 		CHECK_FCT_DO( fd_msg_avp_new ( ta_dest_host, 0, &avp ), goto out  );
@@ -145,13 +143,11 @@ void d_cli_send_msg(DiamTxnData * cbdata)
 		CHECK_FCT_DO( fd_msg_avp_setvalue( avp, &val ), goto out  );
 		CHECK_FCT_DO( fd_msg_avp_add( req, MSG_BRW_LAST_CHILD, avp ), goto out  );
 	}
-	TSDebug(DEBUG_NAME, "Set Origin-Host & Origin-Realm \n");
 	/* Set Origin-Host & Origin-Realm */
 	CHECK_FCT_DO( fd_msg_add_origin ( req, 0 ), goto out  );
 	
     //set optype
     {
-        TSDebug(DEBUG_NAME, "Set Optype \n");
         CHECK_FCT_DO( fd_msg_avp_new ( ta_avp_optype, 0, &avp ), goto out  );
         val.i32 = cbdata->reqType;
         CHECK_FCT_DO( fd_msg_avp_setvalue( avp, &val ), goto out  );
@@ -159,7 +155,6 @@ void d_cli_send_msg(DiamTxnData * cbdata)
     }
     if (cbdata->reqType==d_start){
         //Set userid
-        TSDebug(DEBUG_NAME, "set the userid avp in req.");
 		CHECK_FCT_DO( fd_msg_avp_new ( ta_avp_userid, 0, &avp ), goto out  );
         val.os.len = strlen(cbdata->userId);
         val.os.data = (unsigned char *)cbdata->userId;
@@ -173,7 +168,6 @@ void d_cli_send_msg(DiamTxnData * cbdata)
         val.u64 = reqSize;
         CHECK_FCT_DO( fd_msg_avp_setvalue( avp, &val ), goto out  );
         CHECK_FCT_DO( fd_msg_avp_add( req, MSG_BRW_LAST_CHILD, avp ), goto out  );
-        TSDebug(DEBUG_NAME, "set the requestedQuota avp in req.");
     }
     //set usedQuota
     {
@@ -181,7 +175,6 @@ void d_cli_send_msg(DiamTxnData * cbdata)
         val.u64 = cbdata->used;
         CHECK_FCT_DO( fd_msg_avp_setvalue( avp, &val ), goto out  );
         CHECK_FCT_DO( fd_msg_avp_add( req, MSG_BRW_LAST_CHILD, avp ), goto out  );
-        TSDebug(DEBUG_NAME, "set the usedQuota avp in req.");
     }
 	
 	/* Log sending the message */

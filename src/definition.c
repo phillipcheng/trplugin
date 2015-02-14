@@ -53,6 +53,7 @@ UserSession* user_session_alloc(char* userid){
     s->leftQuota=0;
     s->dserver_error=false;
     s->errorUsed=0;
+    s->pending_d_req=0;
     return s;
 }
 
