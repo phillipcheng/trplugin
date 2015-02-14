@@ -61,6 +61,8 @@ typedef struct {
     int64_t leftQuota; //can be less the zero for over-use
     char*   d1sid;//diameter 1 session id
     UT_hash_handle hh; /* makes this structure hashable */
+    bool dserver_error;
+    int64_t errorUsed;//used when the dserver is down
 }UserSession;
 extern UserSession* user_sessions;
 UserSession * user_session_alloc(char* userid);

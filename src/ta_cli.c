@@ -24,9 +24,9 @@ void ta_cb_ans(void * data, struct msg ** msg)
 	fprintf(stderr, "RECV ");
 	
 	/* Value of Result Code */
-	CHECK_FCT_DO( fd_msg_search_avp ( *msg, ta_res_code, &avp), return );
+    CHECK_FCT_DO( fd_msg_search_avp ( *msg, ta_res_code, &avp), return );
 	if (avp) {
-		CHECK_FCT_DO( fd_msg_avp_hdr( avp, &hdr ), return );
+        CHECK_FCT_DO( fd_msg_avp_hdr( avp, &hdr ), return );
 		fprintf(stderr, "Status: %d ", hdr->avp_value->i32);
 		if (hdr->avp_value->i32 != 2001)
 			error++;
@@ -34,7 +34,7 @@ void ta_cb_ans(void * data, struct msg ** msg)
 		fprintf(stderr, "no_Result-Code \n");
 		error++;
 	}
-	
+    
 	/* Value of Origin-Host */
 	CHECK_FCT_DO( fd_msg_search_avp ( *msg, ta_origin_host, &avp), return );
 	if (avp) {
@@ -44,7 +44,7 @@ void ta_cb_ans(void * data, struct msg ** msg)
 		fprintf(stderr, "no_Origin-Host \n");
 		error++;
 	}
-	
+    
 	/* Value of Origin-Realm */
 	CHECK_FCT_DO( fd_msg_search_avp ( *msg, ta_origin_realm, &avp), return );
 	if (avp) {
@@ -59,10 +59,11 @@ void ta_cb_ans(void * data, struct msg ** msg)
         if (dtxn_data->reqType!=d_stop){
             struct avp * src = NULL;
             struct avp_hdr * hdr = NULL;
+            
             //get the granted quota
-            CHECK_FCT_DO( fd_msg_search_avp ( *msg, ta_avp_grantedQuota, &src), return );
-            CHECK_FCT_DO( fd_msg_avp_hdr( src, &hdr ), return  );
-            if (hdr->avp_value!=NULL){
+            fd_msg_search_avp ( *msg, ta_avp_grantedQuota, &src);
+            if (src){
+                CHECK_FCT_DO( fd_msg_avp_hdr( src, &hdr ), return  );
                 dtxn_data->grantedQuota = hdr->avp_value->u64;
                 if (dtxn_data->grantedQuota<dtxn_data->thisTimeNeed){
                     dtxn_data->flag = FLAG_AUTH_FAILED;
@@ -71,13 +72,16 @@ void ta_cb_ans(void * data, struct msg ** msg)
                 }else{
                     dtxn_data->flag = FLAG_AUTH_SUCC;
                 }
-                if (dtxn_data->reqType==d_start){
-                    start_session_cb(dtxn_data);
-                }else if (dtxn_data->reqType==d_update){
-                    update_session_cb(dtxn_data);
-                }
             }else{
+                //only handle dserver error for start and update
                 TSDebug(DEBUG_NAME, "fatal processing recieve msg. no granted quota AVP found in ans msg.");
+                dtxn_data->dserver_error=true;
+            }
+            
+            if (dtxn_data->reqType==d_start){//let it pass
+                start_session_cb(dtxn_data);
+            }else{
+                update_session_cb(dtxn_data);
             }
         }else{
             end_session_cb(dtxn_data);

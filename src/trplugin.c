@@ -19,6 +19,7 @@ DiamTxnData* dtxn_alloc(TSHttpTxn txnp, TSCont contp, bool httpReq, d_req_type t
     data->reqType = type;
     data->userId=NULL;
     data->d1sid = NULL;
+    data->dserver_error=false;
     return data;
 }
 
@@ -115,13 +116,19 @@ void http_req_continue_cb(TSHttpTxn txnp, TSCont contp){
 
 void start_session_cb(DiamTxnData* dtdata){
     if (dtdata!=NULL){
-        if (dtdata->flag==FLAG_AUTH_SUCC){
+        if (dtdata->flag==FLAG_AUTH_SUCC||dtdata->dserver_error){
             UserSession* us = user_session_alloc(dtdata->userId);
             us->d1sid =strdup(dtdata->d1sid);
-            TSDebug(DEBUG_NAME, "start cmd: session created for user:%s and user-sid:%s and diameter1-sid:%s with quota %llu",
-                    dtdata->userId, us->sid, us->d1sid, dtdata->grantedQuota);
-            us->grantedQuota = dtdata->grantedQuota;
-            us->leftQuota = dtdata->grantedQuota;
+            if (!dtdata->dserver_error){
+                TSDebug(DEBUG_NAME, "start cmd: session created for user:%s and user-sid:%s and diameter1-sid:%s with quota %llu",
+                        dtdata->userId, us->sid, us->d1sid, dtdata->grantedQuota);
+                us->grantedQuota = dtdata->grantedQuota;
+                us->leftQuota = dtdata->grantedQuota;
+            }else{
+                TSDebug(DEBUG_NAME, "start cmd: dserver has problem, shortcut session created for user:%s and user-sid:%s and diameter1-sid:%s",
+                        dtdata->userId, us->sid, us->d1sid);
+                us->dserver_error=true;
+            }
             add_user_session(us);
             //add session id to ctx data for rsp processor
             TxnData* ctx = TSContDataGet(dtdata->contp);
@@ -177,15 +184,22 @@ void update_session_cb(DiamTxnData* dtxn_data){
     UserSession* us = find_user_session(txnData->sessionid);
     us->grantedQuota = dtxn_data->grantedQuota; //new grant
     us->leftQuota = us->grantedQuota;
-    if (dtxn_data->flag==FLAG_AUTH_SUCC){
-        //allow
-        us->leftQuota = us->grantedQuota - dtxn_data->thisTimeNeed;
-        TSDebug(DEBUG_NAME, "req: %d: update session: has quota: latest quota: %llu, quota left: %llu, this time usage: %llu",
-                dtxn_data->httpReq, us->grantedQuota, us->leftQuota, dtxn_data->thisTimeNeed);
-        if (dtxn_data->httpReq){
-            http_req_continue_cb(dtxn_data->txnp, dtxn_data->contp);
+    if (dtxn_data->flag==FLAG_AUTH_SUCC || dtxn_data->dserver_error){
+        if (!dtxn_data->dserver_error){
+            //allow
+            us->leftQuota = us->grantedQuota - dtxn_data->thisTimeNeed;
+            TSDebug(DEBUG_NAME, "req: %d: update session: has quota: latest quota: %llu, quota left: %llu, this time usage: %llu",
+                    dtxn_data->httpReq, us->grantedQuota, us->leftQuota, dtxn_data->thisTimeNeed);
+            if (dtxn_data->httpReq){
+                http_req_continue_cb(dtxn_data->txnp, dtxn_data->contp);
+            }else{
+                TSHttpTxnReenable(dtxn_data->txnp, TS_EVENT_HTTP_CONTINUE);
+            }
         }else{
-            TSHttpTxnReenable(dtxn_data->txnp, TS_EVENT_HTTP_CONTINUE);
+            us->dserver_error=true;
+            us->errorUsed+=dtxn_data->thisTimeNeed;
+            TSDebug(DEBUG_NAME, "req: %d: update dserver_error session: errorUsed %llu, this time usage: %llu",
+                    dtxn_data->httpReq, us->errorUsed, dtxn_data->thisTimeNeed);
         }
     }else{
         //block
@@ -208,13 +222,19 @@ void postprocess_any_request(TSHttpTxn txnp, TSCont contp){
     TxnData* txnData = TSContDataGet(contp);
     UserSession* us = find_user_session(txnData->sessionid);
     if (us!=NULL){
-        TSDebug(DEBUG_NAME, "postprocess any request, session id:%s, usage:%ld", txnData->sessionid, len);
-        us->leftQuota-=len;
+        if (us->dserver_error){
+            us->errorUsed+=len;
+            TSDebug(DEBUG_NAME, "postprocess any request, session id:%s, usage this time:%ld, errorUsed:%llu",
+                    txnData->sessionid, len, us->errorUsed);
+        }else{
+            us->leftQuota-=len;
+            TSDebug(DEBUG_NAME, "postprocess any request, session id:%s, usage this time:%ld, leftQuota:%llu",
+                    txnData->sessionid, len, us->leftQuota);
+        }
     }
 }
 
 void update_session(TSHttpTxn txnp, TSCont contp, long len, bool req){
-    
     TxnData* txnData = TSContDataGet(contp);
     UserSession* us = find_user_session(txnData->sessionid);
     if (us==NULL){
@@ -227,8 +247,13 @@ void update_session(TSHttpTxn txnp, TSCont contp, long len, bool req){
         }
     }else{
         TSDebug(DEBUG_NAME, "user session id:%s, is req: %d, usage:%ld", txnData->sessionid, req, len);
-        if (us->leftQuota>=len){
-            us->leftQuota-=len;
+        if (us->leftQuota>=len || us->dserver_error){
+            //let it through
+            if (us->leftQuota>=len){
+                us->leftQuota-=len;
+            }else{
+                us->errorUsed+=len;
+            }
             if (req){
                 http_req_continue_cb(txnp, contp);
             }else{
@@ -236,11 +261,22 @@ void update_session(TSHttpTxn txnp, TSCont contp, long len, bool req){
                 TSHttpTxnReenable(txnp, TS_EVENT_HTTP_CONTINUE);
             }
         }else{
-            //send diameter update request
-            DiamTxnData* dtxn_data = dtxn_alloc(txnp, contp, req, d_update);
-            dtxn_data->used = us->grantedQuota-us->leftQuota;
-            dtxn_data->d1sid = strdup(us->d1sid);
-            d_cli_send_msg(dtxn_data);
+            //dserver normal and no left quota
+            if (us->grantedQuota==0){
+                //no more balance
+                if (req){
+                    http_req_shortcut_cb(txnp, contp, FLAG_AUTH_FAILED, RSP_REASON_VAL_NOBAL);
+                }else{
+                    setHttpHdrStatus(txnp, TS_HTTP_STATUS_UNAUTHORIZED);
+                    TSHttpTxnReenable(txnp, TS_EVENT_HTTP_CONTINUE);
+                }
+            }else{
+                //last time still grants, send diameter update request
+                DiamTxnData* dtxn_data = dtxn_alloc(txnp, contp, req, d_update);
+                dtxn_data->used = us->grantedQuota-us->leftQuota;
+                dtxn_data->d1sid = strdup(us->d1sid);
+                d_cli_send_msg(dtxn_data);
+            }
         }
     }
 }
@@ -344,7 +380,7 @@ static int tr_plugin(TSCont contp, TSEvent event, void *edata)
     TSHttpTxn txnp = (TSHttpTxn) edata;
     TxnData *txn_data = TSContDataGet(contp);
     
-    debugBytes(txnp, event);
+    //debugBytes(txnp, event);
     switch (event) {
         case TS_EVENT_HTTP_READ_REQUEST_HDR:
             handle_request(txnp, contp);

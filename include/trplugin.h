@@ -42,6 +42,7 @@ typedef struct {
     d_req_type reqType;//diameter req type: start, update, stop
     char* userId;//user id
     char* d1sid;//diameter session id for no.1 diameter server, can be multiple.
+    bool dserver_error;//when diameter server goes to error, let user use and record the usage, when the server recover, report all used.
 } DiamTxnData;
 
 TxnData * txn_data_alloc();

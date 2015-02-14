@@ -51,6 +51,8 @@ UserSession* user_session_alloc(char* userid){
     s->sid=strdup(userid);
     s->grantedQuota=0;
     s->leftQuota=0;
+    s->dserver_error=false;
+    s->errorUsed=0;
     return s;
 }
 
