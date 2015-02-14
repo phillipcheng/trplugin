@@ -58,13 +58,17 @@ char* getHeaderAttr(TSMBuffer bufp, TSMLoc hdr_loc, const char* name, int length
     int cmdval_length;
     if (cmdfield_loc){
         cmdval = TSMimeHdrFieldValueStringGet(bufp, hdr_loc, cmdfield_loc, -1, &cmdval_length);
-        //TSDebug(DEBUG_NAME, "get attribute:%s len:%d", name, cmdval_length);
-        char* val = TSmalloc(cmdval_length+1);
-        TSstrlcpy(val, cmdval, cmdval_length+1);
-        *(val+cmdval_length+1)='\0';
-        TSHandleMLocRelease(bufp, hdr_loc, cmdfield_loc);
-        //TSDebug(DEBUG_NAME, "get attribute:%s val:%s", name, val);
-        return val;
+        if (cmdval!=NULL){
+            //TSDebug(DEBUG_NAME, "get attribute:%s len:%d", name, cmdval_length);
+            char* val = TSmalloc(cmdval_length+1);
+            TSstrlcpy(val, cmdval, cmdval_length+1);
+            *(val+cmdval_length+1)='\0';
+            TSHandleMLocRelease(bufp, hdr_loc, cmdfield_loc);
+            //TSDebug(DEBUG_NAME, "get attribute:%s val:%s", name, val);
+            return val;
+        }else{
+            return NULL;
+        }
     }else{
         return NULL;
     }
@@ -179,7 +183,6 @@ void update_session_cb(DiamTxnData* dtxn_data){
     TxnData* txnData = TSContDataGet(dtxn_data->contp);
     //get session data
     UserSession* us = find_user_session(txnData->sessionid);
-    TSDebug(DEBUG_NAME, "before lock user session: %s", us->sid);
     pthread_mutex_lock(&us->us_lock);
     us->grantedQuota = dtxn_data->grantedQuota; //new grant
     us->leftQuota = us->grantedQuota-us->errorUsed;//deduct the volume used while waiting for response
@@ -188,6 +191,7 @@ void update_session_cb(DiamTxnData* dtxn_data){
         if (!dtxn_data->dserver_error){
             //allow
             us->leftQuota = us->grantedQuota - dtxn_data->thisTimeNeed;
+            pthread_mutex_unlock(&us->us_lock);
             TSDebug(DEBUG_NAME, "req: %d: update session: has quota: latest quota: %llu, quota left: %lld, this time usage: %llu",
                     dtxn_data->httpReq, us->grantedQuota, us->leftQuota, dtxn_data->thisTimeNeed);
             if (dtxn_data->httpReq){
@@ -198,10 +202,12 @@ void update_session_cb(DiamTxnData* dtxn_data){
         }else{
             us->dserver_error=true;
             us->errorUsed+=dtxn_data->thisTimeNeed;
+            pthread_mutex_unlock(&us->us_lock);
             TSDebug(DEBUG_NAME, "req: %d: update dserver_error session: errorUsed %llu, this time usage: %llu",
                     dtxn_data->httpReq, us->errorUsed, dtxn_data->thisTimeNeed);
         }
     }else{
+        pthread_mutex_unlock(&us->us_lock);
         //block
         TSDebug(DEBUG_NAME, "req: %d, use session: no quota: left:%lld, ask: %llu",
                 dtxn_data->httpReq, us->leftQuota, dtxn_data->thisTimeNeed);
@@ -212,8 +218,6 @@ void update_session_cb(DiamTxnData* dtxn_data){
             TSHttpTxnReenable(dtxn_data->txnp, TS_EVENT_HTTP_CONTINUE);
         }
     }
-    TSDebug(DEBUG_NAME, "before unlock user session: %s", us->sid);
-    pthread_mutex_unlock(&us->us_lock);
     dtxn_free(dtxn_data);
 }
 
@@ -224,7 +228,6 @@ void postprocess_any_request(TSHttpTxn txnp, TSCont contp){
     TxnData* txnData = TSContDataGet(contp);
     UserSession* us = find_user_session(txnData->sessionid);
     if (us!=NULL){
-        TSDebug(DEBUG_NAME, "before lock user session: %s", us->sid);
         pthread_mutex_lock(&us->us_lock);
         if (us->dserver_error){
             us->errorUsed+=len;
@@ -235,7 +238,6 @@ void postprocess_any_request(TSHttpTxn txnp, TSCont contp){
             TSDebug(DEBUG_NAME, "postprocess any request, session id:%s, usage this time:%ld, leftQuota:%lld",
                     txnData->sessionid, len, us->leftQuota);
         }
-        TSDebug(DEBUG_NAME, "before unlock user session: %s", us->sid);
         pthread_mutex_unlock(&us->us_lock);
     }else{
         TSDebug(DEBUG_NAME, "postprocess any request, session not found for %s",
@@ -256,7 +258,6 @@ void update_session(TSHttpTxn txnp, TSCont contp, long len, bool req){
         }
     }else{
         TSDebug(DEBUG_NAME, "user session id:%s, is req: %d, usage:%ld", txnData->sessionid, req, len);
-        TSDebug(DEBUG_NAME, "before lock user session: %s", us->sid);
         pthread_mutex_lock(&us->us_lock);
         if (us->leftQuota>=len || us->dserver_error || us->pending_d_req>0){
             //let it pass under one of these conditions
@@ -268,6 +269,7 @@ void update_session(TSHttpTxn txnp, TSCont contp, long len, bool req){
             }else{
                 us->errorUsed+=len;
             }
+            pthread_mutex_unlock(&us->us_lock);
             if (req){
                 http_req_continue_cb(txnp, contp);
             }else{
@@ -275,6 +277,7 @@ void update_session(TSHttpTxn txnp, TSCont contp, long len, bool req){
                 TSHttpTxnReenable(txnp, TS_EVENT_HTTP_CONTINUE);
             }
         }else{
+            pthread_mutex_unlock(&us->us_lock);
             //dserver normal and no left quota
             if (us->grantedQuota==0){
                 //no more balance
@@ -296,7 +299,6 @@ void update_session(TSHttpTxn txnp, TSCont contp, long len, bool req){
             }
         }
         TSDebug(DEBUG_NAME, "before unlock user session: %s", us->sid);
-        pthread_mutex_unlock(&us->us_lock);
     }
 }
 
