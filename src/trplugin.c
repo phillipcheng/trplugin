@@ -183,40 +183,46 @@ void update_session_cb(DiamTxnData* dtxn_data){
     TxnData* txnData = TSContDataGet(dtxn_data->contp);
     //get session data
     UserSession* us = find_user_session(txnData->sessionid);
-    pthread_mutex_lock(&us->us_lock);
-    us->grantedQuota = dtxn_data->grantedQuota; //new grant
-    us->leftQuota = us->grantedQuota-us->errorUsed;//deduct the volume used while waiting for response
-    us->pending_d_req=0;//rsp comming back
-    if (dtxn_data->flag==FLAG_AUTH_SUCC || dtxn_data->dserver_error){
-        if (!dtxn_data->dserver_error){
-            //allow
-            us->leftQuota = us->grantedQuota - dtxn_data->thisTimeNeed;
-            pthread_mutex_unlock(&us->us_lock);
-            TSDebug(DEBUG_NAME, "req: %d: update session: has quota: latest quota: %llu, quota left: %lld, this time usage: %llu",
-                    dtxn_data->httpReq, us->grantedQuota, us->leftQuota, dtxn_data->thisTimeNeed);
-            if (dtxn_data->httpReq){
-                http_req_continue_cb(dtxn_data->txnp, dtxn_data->contp);
+    if (us!=NULL){
+        TSDebug(DEBUG_NAME, "update session callback is invoked try to get the lock");
+        pthread_mutex_lock(&us->us_lock);
+        TSDebug(DEBUG_NAME, "update session callback is invoked get the lock");
+        us->grantedQuota = dtxn_data->grantedQuota; //new grant
+        us->leftQuota = us->grantedQuota-us->errorUsed;//deduct the volume used while waiting for response
+        us->pending_d_req=0;//rsp comming back
+        if (dtxn_data->flag==FLAG_AUTH_SUCC || dtxn_data->dserver_error){
+            if (!dtxn_data->dserver_error){
+                //allow
+                us->leftQuota = us->grantedQuota - dtxn_data->thisTimeNeed;
+                pthread_mutex_unlock(&us->us_lock);
+                TSDebug(DEBUG_NAME, "req: %d: update session: has quota: latest quota: %llu, quota left: %lld, this time usage: %llu",
+                        dtxn_data->httpReq, us->grantedQuota, us->leftQuota, dtxn_data->thisTimeNeed);
+                if (dtxn_data->httpReq){
+                    http_req_continue_cb(dtxn_data->txnp, dtxn_data->contp);
+                }else{
+                    TSHttpTxnReenable(dtxn_data->txnp, TS_EVENT_HTTP_CONTINUE);
+                }
             }else{
-                TSHttpTxnReenable(dtxn_data->txnp, TS_EVENT_HTTP_CONTINUE);
+                us->dserver_error=true;
+                us->errorUsed+=dtxn_data->thisTimeNeed;
+                pthread_mutex_unlock(&us->us_lock);
+                TSDebug(DEBUG_NAME, "req: %d: update dserver_error session: errorUsed %llu, this time usage: %llu",
+                        dtxn_data->httpReq, us->errorUsed, dtxn_data->thisTimeNeed);
             }
         }else{
-            us->dserver_error=true;
-            us->errorUsed+=dtxn_data->thisTimeNeed;
             pthread_mutex_unlock(&us->us_lock);
-            TSDebug(DEBUG_NAME, "req: %d: update dserver_error session: errorUsed %llu, this time usage: %llu",
-                    dtxn_data->httpReq, us->errorUsed, dtxn_data->thisTimeNeed);
+            //block
+            TSDebug(DEBUG_NAME, "req: %d, use session: no quota: left:%lld, ask: %llu",
+                    dtxn_data->httpReq, us->leftQuota, dtxn_data->thisTimeNeed);
+            if (dtxn_data->httpReq){
+                http_req_shortcut_cb(dtxn_data->txnp, dtxn_data->contp, FLAG_AUTH_FAILED, RSP_REASON_VAL_NOBAL);
+            }else{
+                setHttpHdrStatus(dtxn_data->txnp, TS_HTTP_STATUS_UNAUTHORIZED);
+                TSHttpTxnReenable(dtxn_data->txnp, TS_EVENT_HTTP_CONTINUE);
+            }
         }
     }else{
-        pthread_mutex_unlock(&us->us_lock);
-        //block
-        TSDebug(DEBUG_NAME, "req: %d, use session: no quota: left:%lld, ask: %llu",
-                dtxn_data->httpReq, us->leftQuota, dtxn_data->thisTimeNeed);
-        if (dtxn_data->httpReq){
-            http_req_shortcut_cb(dtxn_data->txnp, dtxn_data->contp, FLAG_AUTH_FAILED, RSP_REASON_VAL_NOBAL);
-        }else{
-            setHttpHdrStatus(dtxn_data->txnp, TS_HTTP_STATUS_UNAUTHORIZED);
-            TSHttpTxnReenable(dtxn_data->txnp, TS_EVENT_HTTP_CONTINUE);
-        }
+        TSDebug(DEBUG_NAME, "fatal error, in update callback, user session %s not found.", txnData->sessionid);
     }
     dtxn_free(dtxn_data);
 }
@@ -290,7 +296,6 @@ void update_session(TSHttpTxn txnp, TSCont contp, long len, bool req){
             }else{
                 //last time server still grants, and I am the 1st to ask
                 //send diameter update request asking quota again
-                //ASSERT(us->leftQuota<len && us->grantedQuota>0 && !us->dserver_error && us->pending_d_req==0);
                 DiamTxnData* dtxn_data = dtxn_alloc(txnp, contp, req, d_update);
                 dtxn_data->used = us->grantedQuota-us->leftQuota;
                 dtxn_data->d1sid = strdup(us->d1sid);
@@ -298,7 +303,6 @@ void update_session(TSHttpTxn txnp, TSCont contp, long len, bool req){
                 us->pending_d_req=1;
             }
         }
-        TSDebug(DEBUG_NAME, "before unlock user session: %s", us->sid);
     }
 }
 
