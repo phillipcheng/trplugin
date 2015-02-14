@@ -28,7 +28,7 @@ $(DS_EXE): $(OBJS_DS)
 	$(CC) $(CFLAGS) $< -o $@
 
 clean:
-	rm *.o *.so
+	rm *.o *.so *.fdx
 
 install_app:
 	install_name_tool -change libfdproto.6.dylib /opt/fd/lib/libfdproto.6.dylib /opt/fd/lib/libfdcore.6.dylib
