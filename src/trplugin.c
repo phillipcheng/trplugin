@@ -184,9 +184,7 @@ void update_session_cb(DiamTxnData* dtxn_data){
     //get session data
     UserSession* us = find_user_session(txnData->sessionid);
     if (us!=NULL){
-        TSDebug(DEBUG_NAME, "update session callback is invoked try to get the lock");
         pthread_mutex_lock(&us->us_lock);
-        TSDebug(DEBUG_NAME, "update session callback is invoked get the lock");
         us->grantedQuota = dtxn_data->grantedQuota; //new grant
         us->leftQuota = us->grantedQuota-us->errorUsed;//deduct the volume used while waiting for response
         us->pending_d_req=0;//rsp comming back
@@ -195,8 +193,8 @@ void update_session_cb(DiamTxnData* dtxn_data){
                 //allow
                 us->leftQuota = us->grantedQuota - dtxn_data->thisTimeNeed;
                 pthread_mutex_unlock(&us->us_lock);
-                TSDebug(DEBUG_NAME, "req: %d: update session: has quota: latest quota: %llu, quota left: %lld, this time usage: %llu",
-                        dtxn_data->httpReq, us->grantedQuota, us->leftQuota, dtxn_data->thisTimeNeed);
+                TSDebug(DEBUG_NAME, "req: %d: update session %s has quota: latest quota: %llu, quota left: %lld, this time usage: %llu, pending_d_request: %d",
+                        dtxn_data->httpReq, us->sid, us->grantedQuota, us->leftQuota, dtxn_data->thisTimeNeed, us->pending_d_req);
                 if (dtxn_data->httpReq){
                     http_req_continue_cb(dtxn_data->txnp, dtxn_data->contp);
                 }else{
@@ -268,8 +266,8 @@ void update_session(TSHttpTxn txnp, TSCont contp, long len, bool req){
         if (us->leftQuota>=len || us->dserver_error || us->pending_d_req>0){
             //let it pass under one of these conditions
             //1. has enough quota. 2.diameter server is not responding 3.there is pending d_request (under asking)
-            TSDebug(DEBUG_NAME, "allow access because leftQuota:%llu, this len:%lld, dserver_error:%d, pending_d_req:%d",
-                    us->leftQuota, len, us->dserver_error, us->pending_d_req);
+            TSDebug(DEBUG_NAME, "allow access for session %s:leftQuota:%llu, this len:%lld, dserver_error:%d, pending_d_req:%d",
+                    us->sid, us->leftQuota, len, us->dserver_error, us->pending_d_req);
             if (us->leftQuota>=len){
                 us->leftQuota-=len;
             }else{
@@ -299,6 +297,7 @@ void update_session(TSHttpTxn txnp, TSCont contp, long len, bool req){
                 DiamTxnData* dtxn_data = dtxn_alloc(txnp, contp, req, d_update);
                 dtxn_data->used = us->grantedQuota-us->leftQuota;
                 dtxn_data->d1sid = strdup(us->d1sid);
+                dtxn_data->thisTimeNeed = len;
                 d_cli_send_msg(dtxn_data);
                 us->pending_d_req=1;
             }
