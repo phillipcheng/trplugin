@@ -58,7 +58,7 @@ char* getHeaderAttr(TSMBuffer bufp, TSMLoc hdr_loc, const char* name, int length
     int cmdval_length;
     if (cmdfield_loc){
         cmdval = TSMimeHdrFieldValueStringGet(bufp, hdr_loc, cmdfield_loc, -1, &cmdval_length);
-        TSDebug(DEBUG_NAME, "get attribute:%s len:%d", name, cmdval_length);
+        //TSDebug(DEBUG_NAME, "get attribute:%s len:%d", name, cmdval_length);
         char* val = TSmalloc(cmdval_length+1);
         TSstrlcpy(val, cmdval, cmdval_length+1);
         *(val+cmdval_length+1)='\0';
@@ -258,6 +258,8 @@ void update_session(TSHttpTxn txnp, TSCont contp, long len, bool req){
         if (us->leftQuota>=len || us->dserver_error || us->pending_d_req>0){
             //let it pass under one of these conditions
             //1. has enough quota. 2.diameter server is not responding 3.there is pending d_request (under asking)
+            TSDebug(DEBUG_NAME, "allow access because leftQuota:%llu, this len:%lld, dserver_error:%d, pending_d_req:%d",
+                    us->leftQuota, len, us->dserver_error, us->pending_d_req);
             if (us->leftQuota>=len){
                 us->leftQuota-=len;
             }else{
