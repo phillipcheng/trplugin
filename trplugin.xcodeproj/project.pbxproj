@@ -33,6 +33,14 @@
 		26793BF91A86EDA8005E46B6 /* libfdcore.1.2.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libfdcore.1.2.0.dylib; path = ../../../../../../opt/fd/lib/libfdcore.1.2.0.dylib; sourceTree = "<group>"; };
 		26793BFE1A86F1AD005E46B6 /* ta_cli_dummy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ta_cli_dummy.c; sourceTree = "<group>"; };
 		26793BFF1A86F1AD005E46B6 /* ta_serv_dummy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ta_serv_dummy.c; sourceTree = "<group>"; };
+		268EDDFF1A8AB77D00AC6D41 /* fd1.conf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = fd1.conf; sourceTree = "<group>"; };
+		268EDE001A8AB84B00AC6D41 /* id1.privkey.pem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = id1.privkey.pem; sourceTree = "<group>"; };
+		268EDE011A8AB84B00AC6D41 /* id2.privkey.pem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = id2.privkey.pem; sourceTree = "<group>"; };
+		268EDE021A8AB84B00AC6D41 /* id1.cert.pem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = id1.cert.pem; sourceTree = "<group>"; };
+		268EDE031A8AB84B00AC6D41 /* id2.cert.pem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = id2.cert.pem; sourceTree = "<group>"; };
+		268EDE041A8AB84B00AC6D41 /* id1.dh.pem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = id1.dh.pem; sourceTree = "<group>"; };
+		268EDE051A8AB84B00AC6D41 /* id2.dh.pem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = id2.dh.pem; sourceTree = "<group>"; };
+		268EDE061A8AB8E600AC6D41 /* fd2.conf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = fd2.conf; sourceTree = "<group>"; };
 		26B31AD11A83EAFE0065E119 /* dc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dc.h; sourceTree = "<group>"; };
 		26B31AD21A83EAFE0065E119 /* utarray.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utarray.h; sourceTree = "<group>"; };
 		26B31AD31A83EAFE0065E119 /* uthash.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = uthash.h; sourceTree = "<group>"; };
@@ -67,6 +75,7 @@
 		266710F21A7C113C00A140E9 = {
 			isa = PBXGroup;
 			children = (
+				268EDDFE1A8AB77D00AC6D41 /* conf */,
 				26793BF81A86EDA8005E46B6 /* libfdproto.1.2.0.dylib */,
 				26793BF91A86EDA8005E46B6 /* libfdcore.1.2.0.dylib */,
 				26793BF21A86ED7C005E46B6 /* libtsconfig.5.dylib */,
@@ -86,11 +95,26 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		268EDDFE1A8AB77D00AC6D41 /* conf */ = {
+			isa = PBXGroup;
+			children = (
+				268EDE061A8AB8E600AC6D41 /* fd2.conf */,
+				268EDE001A8AB84B00AC6D41 /* id1.privkey.pem */,
+				268EDE011A8AB84B00AC6D41 /* id2.privkey.pem */,
+				268EDE021A8AB84B00AC6D41 /* id1.cert.pem */,
+				268EDE031A8AB84B00AC6D41 /* id2.cert.pem */,
+				268EDE041A8AB84B00AC6D41 /* id1.dh.pem */,
+				268EDE051A8AB84B00AC6D41 /* id2.dh.pem */,
+				268EDDFF1A8AB77D00AC6D41 /* fd1.conf */,
+			);
+			path = conf;
+			sourceTree = "<group>";
+		};
 		26B31AD01A83EAFE0065E119 /* include */ = {
 			isa = PBXGroup;
 			children = (
-				26F7AF0D1A8653180070EAAE /* trplugin.h */,
 				26B31AD11A83EAFE0065E119 /* dc.h */,
+				26F7AF0D1A8653180070EAAE /* trplugin.h */,
 				26B31AD21A83EAFE0065E119 /* utarray.h */,
 				26B31AD31A83EAFE0065E119 /* uthash.h */,
 				26B31AD41A83EAFE0065E119 /* utlist.h */,
@@ -108,9 +132,9 @@
 				26F7AF0B1A8642B10070EAAE /* ta_serv.c */,
 				26B31AD71A83EAFE0065E119 /* dc.c */,
 				26B31AD91A83EAFE0065E119 /* Makefile */,
-				26B31ADA1A83EAFE0065E119 /* ta_cli.c */,
 				26B31ADC1A83EAFE0065E119 /* ta_dict.c */,
 				26B31ADE1A83EAFE0065E119 /* test_app.c */,
+				26B31ADA1A83EAFE0065E119 /* ta_cli.c */,
 				26B31AE01A83EAFE0065E119 /* trplugin.c */,
 				26532C251A86FF4800053103 /* definition.c */,
 			);
