@@ -25,9 +25,11 @@ extern const int DC_CLIENT;
 extern const int DC_SERVER;
 
 extern const unsigned long MIN_REQUEST_QUOTA;
-extern const unsigned int MAX_USERID_LEN;
-extern const unsigned int MAX_DSID_LEN;
 extern const unsigned long DUMMY_INIT_QUOTA;
+
+extern const unsigned int DIAMETER_SUCCESS;
+extern const unsigned int DIAMETER_UNKNOWN_SESSION_ID;//for update and stop
+extern const unsigned int DIAMETER_AUTHORIZATION_REJECTED; //maps to user not found for start
 
 /* The module configuration */
 struct ta_conf {
@@ -53,25 +55,6 @@ struct ta_conf {
     pthread_mutex_t		stats_lock;
 };
 extern struct ta_conf * ta_conf;
-
-//user session structure, global user-sessions handler and methods
-typedef struct {
-    char*   sid;//
-    uint64_t    grantedQuota;
-    int64_t leftQuota; //can be less the zero for over-use
-    char*   d1sid;//diameter 1 session id
-    bool dserver_error;
-    int64_t errorUsed;//used when the dserver is down
-    pthread_mutex_t		us_lock;//lock for this user session
-    uint32_t    pending_d_req;//the number of pending diameter req
-    UT_hash_handle hh; /* makes this structure hashable */
-}UserSession;
-extern UserSession* user_sessions;
-UserSession * user_session_alloc(char* userid);
-void uses_session_free(UserSession *data);
-void add_user_session(UserSession* us);
-UserSession* find_user_session(char* sid);
-void delete_user_session(char* sid);
 
 typedef struct {
     uint64_t leftQuota;

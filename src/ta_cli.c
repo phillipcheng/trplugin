@@ -13,76 +13,56 @@
 void ta_cb_ans(void * data, struct msg ** msg)
 {
 	struct timespec ts;
-	struct avp * avp;
-	struct avp_hdr * hdr;
-	int error = 0;
     DiamTxnData* dtxn_data = data;
-	
-	CHECK_SYS_DO( clock_gettime(CLOCK_REALTIME, &ts), return );
-
-	/* Now log content of the answer */
-	fprintf(stderr, "RECV ");
-	
-	/* Value of Result Code */
-    CHECK_FCT_DO( fd_msg_search_avp ( *msg, ta_res_code, &avp), return );
-	if (avp) {
-        CHECK_FCT_DO( fd_msg_avp_hdr( avp, &hdr ), return );
-		fprintf(stderr, "Status: %d ", hdr->avp_value->i32);
-		if (hdr->avp_value->i32 != 2001)
-			error++;
-	} else {
-		fprintf(stderr, "no_Result-Code \n");
-		error++;
-	}
-    
-	/* Value of Origin-Host */
-	CHECK_FCT_DO( fd_msg_search_avp ( *msg, ta_origin_host, &avp), return );
-	if (avp) {
-		CHECK_FCT_DO( fd_msg_avp_hdr( avp, &hdr ), return );
-		fprintf(stderr, "From '%.*s' \n", (int)hdr->avp_value->os.len, hdr->avp_value->os.data);
-	} else {
-		fprintf(stderr, "no_Origin-Host \n");
-		error++;
-	}
-    
-	/* Value of Origin-Realm */
-	CHECK_FCT_DO( fd_msg_search_avp ( *msg, ta_origin_realm, &avp), return );
-	if (avp) {
-		CHECK_FCT_DO( fd_msg_avp_hdr( avp, &hdr ), return );
-		fprintf(stderr, "('%.*s') ", (int)hdr->avp_value->os.len, hdr->avp_value->os.data);
-	} else {
-		fprintf(stderr, "no_Origin-Realm \n");
-		error++;
-	}
     
     if (dtxn_data!=NULL){
-        if (dtxn_data->reqType!=d_stop){
-            struct avp * src = NULL;
-            struct avp_hdr * hdr = NULL;
+        CHECK_SYS_DO( clock_gettime(CLOCK_REALTIME, &ts), return );
+        
+        /* Now log content of the answer */
+        fprintf(stderr, "RECV ");
+        
+        struct avp * avp;
+        struct avp_hdr * hdr;
+        /* Value of Result Code */
+        fd_msg_search_avp ( *msg, ta_res_code, &avp);
+        if (avp) {
+            fd_msg_avp_hdr( avp, &hdr );
+            fprintf(stderr, "Status: %d ", hdr->avp_value->i32);
+            unsigned int resultCode = hdr->avp_value->i32;
             
-            //get the granted quota
-            fd_msg_search_avp ( *msg, ta_avp_grantedQuota, &src);
-            if (src){
-                CHECK_FCT_DO( fd_msg_avp_hdr( src, &hdr ), return  );
-                dtxn_data->grantedQuota = hdr->avp_value->u64;
-                if (dtxn_data->grantedQuota<dtxn_data->thisTimeNeed){
-                    dtxn_data->flag = FLAG_AUTH_FAILED;
-                    //TODO, define/reuse the result type/code
-                    dtxn_data->errmsg = RSP_REASON_VAL_NOBAL;
+            if (dtxn_data->reqType!=d_stop){
+                //get the granted quota
+                fd_msg_search_avp ( *msg, ta_avp_grantedQuota, &avp);
+                if (avp){
+                    fd_msg_avp_hdr( avp, &hdr );
+                    dtxn_data->grantedQuota = hdr->avp_value->u64;
+                    if (dtxn_data->grantedQuota<dtxn_data->thisTimeNeed){
+                        dtxn_data->flag = FLAG_AUTH_FAILED;
+                        if (resultCode == DIAMETER_AUTHORIZATION_REJECTED){
+                            dtxn_data->errmsg = RSP_REASON_VAL_NOUSER;
+                        }else if (resultCode == DIAMETER_UNKNOWN_SESSION_ID){
+                            dtxn_data->errmsg = RSP_REASON_VAL_NOIPSESSION;
+                        }else{
+                            dtxn_data->errmsg = RSP_REASON_VAL_NOBAL;
+                        }
+                    }else{
+                        dtxn_data->flag = FLAG_AUTH_SUCC;
+                    }
                 }else{
-                    dtxn_data->flag = FLAG_AUTH_SUCC;
+                    //only handle dserver error for start and update
+                    TSDebug(DEBUG_NAME, "error processing recieve msg:no granted quota AVP. Set dserver in error state.");
+                    dtxn_data->dserver_error=true;
                 }
-            }else{
-                //only handle dserver error for start and update
-                TSDebug(DEBUG_NAME, "fatal processing recieve msg. no granted quota AVP found in ans msg.");
-                dtxn_data->dserver_error=true;
             }
-            
-            if (dtxn_data->reqType==d_start){//let it pass
-                start_session_cb(dtxn_data);
-            }else{
-                update_session_cb(dtxn_data);
-            }
+        }else{
+            TSDebug(DEBUG_NAME, "error processing recieve msg: no result code AVP. Set dserver in error state.");
+            dtxn_data->dserver_error=true;
+        }
+        
+        if (dtxn_data->reqType==d_start){//let it pass
+            start_session_cb(dtxn_data);
+        }else if (dtxn_data->reqType==d_update){
+            update_session_cb(dtxn_data);
         }else{
             end_session_cb(dtxn_data);
         }
@@ -98,7 +78,7 @@ void ta_cb_ans(void * data, struct msg ** msg)
 }
 
 /* Create a test message */
-void d_cli_send_msg(DiamTxnData * cbdata)
+void d_cli_send_msg(DiamTxnData * dtxn_data)
 {
 	struct msg * req = NULL;
 	struct avp * avp;
@@ -109,7 +89,7 @@ void d_cli_send_msg(DiamTxnData * cbdata)
 	CHECK_FCT_DO( fd_msg_new( ta_cmd_r, MSGFL_ALLOC_ETEID, &req ), goto out );
 
     TSDebug(DEBUG_NAME, "Creating a new message for sending.\n");
-    if (cbdata->reqType==d_start){
+    if (dtxn_data->reqType==d_start){
         // Create a new request-session
         CHECK_FCT_DO( fd_msg_new_session( req, (os0_t)TEST_APP_SID_OPT, CONSTSTRLEN(TEST_APP_SID_OPT) ), goto out );
         //set diameter session id in the DiamTxnData
@@ -117,13 +97,13 @@ void d_cli_send_msg(DiamTxnData * cbdata)
         os0_t sid;
         size_t len;
         fd_sess_getsid(sess, &sid, &len);
-        cbdata->d1sid=os0dup_int(sid, len);
+        dtxn_data->d1sid=os0dup_int(sid, len);
     }else{
         //init the message with given session id
         fd_msg_avp_new( ta_sess_id, 0, &avp);
         memset(&val, 0, sizeof(val));
-        val.os.data = (os0_t)cbdata->d1sid;
-        val.os.len  = strlen(cbdata->d1sid);
+        val.os.data = (os0_t)dtxn_data->d1sid;
+        val.os.len  = strlen(dtxn_data->d1sid);
         fd_msg_avp_setvalue( avp, &val );
         fd_msg_avp_add( req, MSG_BRW_FIRST_CHILD, avp );
     }
@@ -149,22 +129,22 @@ void d_cli_send_msg(DiamTxnData * cbdata)
     //set optype
     {
         CHECK_FCT_DO( fd_msg_avp_new ( ta_avp_optype, 0, &avp ), goto out  );
-        val.i32 = cbdata->reqType;
+        val.i32 = dtxn_data->reqType;
         CHECK_FCT_DO( fd_msg_avp_setvalue( avp, &val ), goto out  );
         CHECK_FCT_DO( fd_msg_avp_add( req, MSG_BRW_LAST_CHILD, avp ), goto out  );
     }
-    if (cbdata->reqType==d_start){
+    if (dtxn_data->reqType==d_start){
         //Set userid
 		CHECK_FCT_DO( fd_msg_avp_new ( ta_avp_userid, 0, &avp ), goto out  );
-        val.os.len = strlen(cbdata->userId);
-        val.os.data = (unsigned char *)cbdata->userId;
+        val.os.len = strlen(dtxn_data->userId);
+        val.os.data = (unsigned char *)dtxn_data->userId;
 		CHECK_FCT_DO( fd_msg_avp_setvalue( avp, &val ), goto out  );
 		CHECK_FCT_DO( fd_msg_avp_add( req, MSG_BRW_LAST_CHILD, avp ), goto out  );
 	}
     //set requestQuota
     {
         CHECK_FCT_DO( fd_msg_avp_new ( ta_avp_requestQuota, 0, &avp ), goto out  );
-        uint64_t reqSize = cbdata->requestQuota > MIN_REQUEST_QUOTA? cbdata->requestQuota:MIN_REQUEST_QUOTA;
+        uint64_t reqSize = dtxn_data->requestQuota > MIN_REQUEST_QUOTA? dtxn_data->requestQuota:MIN_REQUEST_QUOTA;
         val.u64 = reqSize;
         CHECK_FCT_DO( fd_msg_avp_setvalue( avp, &val ), goto out  );
         CHECK_FCT_DO( fd_msg_avp_add( req, MSG_BRW_LAST_CHILD, avp ), goto out  );
@@ -172,18 +152,17 @@ void d_cli_send_msg(DiamTxnData * cbdata)
     //set usedQuota
     {
         CHECK_FCT_DO( fd_msg_avp_new ( ta_avp_usedQuota, 0, &avp ), goto out  );
-        val.u64 = cbdata->used;
+        val.u64 = dtxn_data->used;
         CHECK_FCT_DO( fd_msg_avp_setvalue( avp, &val ), goto out  );
         CHECK_FCT_DO( fd_msg_avp_add( req, MSG_BRW_LAST_CHILD, avp ), goto out  );
     }
 	
 	/* Log sending the message */
-	TSDebug(DEBUG_NAME, "SEND %s,%llu to '%s' (%s)\n", cbdata->userId, cbdata->requestQuota,
+	TSDebug(DEBUG_NAME, "SEND %s,%llu to '%s' (%s)\n", dtxn_data->userId, dtxn_data->requestQuota,
             ta_conf->dest_realm, ta_conf->dest_host?:"-" );
 		
 	/* Send the request */
-	CHECK_FCT_DO( fd_msg_send( &req, ta_cb_ans, cbdata), goto out );
-
+	CHECK_FCT_DO( fd_msg_send( &req, ta_cb_ans, dtxn_data), goto out );
 
 out:
 	return;

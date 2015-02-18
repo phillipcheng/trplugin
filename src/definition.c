@@ -37,53 +37,13 @@ const char* RSP_REASON_VAL_USERONLINE="user already online";
 const char* RSP_REASON_VAL_IPINUSE="ip already in use";
 
 const unsigned long MIN_REQUEST_QUOTA = 1*1024*1024;
-const unsigned int MAX_USERID_LEN = 20;
-const unsigned int MAX_DSID_LEN = 40;
 const unsigned long DUMMY_INIT_QUOTA = 3*1024*1024;
 
+const unsigned int DIAMETER_SUCCESS = 2001;
+const unsigned int DIAMETER_UNKNOWN_SESSION_ID= 5002;//for update and stop
+const unsigned int DIAMETER_AUTHORIZATION_REJECTED= 5003; //maps to user not found for start
+
 struct session_handler * ta_cli_reg = NULL;
-
-UserSession* user_sessions = NULL;
-
-UserSession* user_session_alloc(char* userid){
-    //now sid is userid
-    UserSession* s = malloc(sizeof(UserSession));
-    s->sid=strdup(userid);
-    s->grantedQuota=0;
-    s->leftQuota=0;
-    s->dserver_error=false;
-    s->errorUsed=0;
-    s->pending_d_req=0;
-    return s;
-}
-
-void user_session_free(UserSession *data){
-    if (data->sid!=NULL){
-        free(data->sid);
-    }
-    if (data->d1sid!=NULL){
-        free(data->d1sid);
-    }
-    free(data);
-}
-
-void add_user_session(UserSession* us){
-    HASH_ADD_STR(user_sessions, sid, us);
-}
-
-UserSession* find_user_session(char* sid){
-    UserSession* s;
-    HASH_FIND_STR(user_sessions, sid, s);
-    return s;
-}
-
-void delete_user_session(char* sid){
-    UserSession* s = find_user_session(sid);
-    if (s!=NULL){
-        HASH_DEL(user_sessions, s);
-        user_session_free(s);
-    }
-}
 
 //for the simulated server side usage session
 UsageServerSession * usageserver_session_alloc(){

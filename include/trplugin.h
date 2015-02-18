@@ -1,5 +1,5 @@
 //
-//  dc.h
+//  trplugin.h
 //  trplugin
 //
 //  Created by Cheng Yi on 1/31/15.
@@ -16,11 +16,11 @@
 #include <locale.h>
 #include <ts/ts.h>
 
-
 extern const int FLAG_AUTH_SUCC;
 extern const int FLAG_AUTH_FAILED;
 extern const int FLAG_NORMAL;
 typedef enum {u_start=1, u_use=2, u_stop=3} u_req_type;
+
 //context data for txn (req, rsp), put in the continuation for http response processor to get
 typedef struct {
     int flag; //indicate whether the authentication succeed or not
@@ -28,7 +28,7 @@ typedef struct {
     char* user;
     char* sessionid;
     u_req_type reqType;//user req type: start, use, stop
-} TxnData;
+} HttpTxnData;
 
 //context data for diameter txn (req, rsp), put in the diameter session for diameter response processor to get
 typedef struct {
@@ -47,15 +47,39 @@ typedef struct {
     bool dserver_error;//when diameter server goes to error, let user use and record the usage, when the server recover, report all used.
 } DiamTxnData;
 
-TxnData * txn_data_alloc();
-void txn_data_free(TxnData *data);
+//
+HttpTxnData * http_txn_data_alloc();
+void http_txn_data_free(HttpTxnData *data);
+//
 DiamTxnData* dtxn_alloc(TSHttpTxn txnp, TSCont contp, bool req, d_req_type type);
 void dtxn_free(DiamTxnData *data);
 
+//
 void d_cli_send_msg(DiamTxnData * dtdata);
 void start_session_cb(DiamTxnData* dtdata);
 void update_session_cb(DiamTxnData* dtxn_data);
 void end_session_cb(DiamTxnData* dtxn_data);
+
+//user session structure, global user-sessions handler and methods
+typedef struct {
+    char*   sid;//
+    uint64_t    grantedQuota;
+    int64_t leftQuota; //can be less the zero for over-use
+    char*   d1sid;//diameter 1 session id
+    bool dserver_error;
+    int64_t errorUsed;//used when the dserver is down
+    pthread_mutex_t		us_lock;//lock for this user session
+    uint32_t    pending_d_req;//the number of pending diameter req
+    UT_hash_handle hh; /* makes this structure hashable */
+}UserSession;
+extern UserSession* user_sessions;
+extern int user_session_count_stat;//TSStat on user session
+
+UserSession * user_session_alloc(char* userid);
+void uses_session_free(UserSession *data);
+void add_user_session(UserSession* us);
+UserSession* find_user_session(char* sid);
+void delete_user_session(char* sid);
 
 //
 extern const char* HEADER_CMD;
