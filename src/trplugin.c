@@ -72,7 +72,7 @@ void http_req_continue_cb(TSHttpTxn txnp, TSCont contp){
 
 void start_session_cb(DiamTxnData* dtdata){
     if (dtdata->flag==FLAG_AUTH_SUCC||dtdata->dserver_error){
-        UserSession* us = user_session_alloc(dtdata->userId);
+        UserSession* us = user_session_alloc(dtdata->userId, dtdata->tenantId);
         us->d1sid =strdup(dtdata->d1sid);
         if (!dtdata->dserver_error){
             TSDebug(DEBUG_NAME, "start cmd: session created for user:%s and user-sid:%s and diameter1-sid:%s with quota %llu",
@@ -102,6 +102,7 @@ void start_session(TSHttpTxn txnp, TSCont contp){
     HttpTxnData* txnData=TSContDataGet(contp);
     dtxnData->requestQuota = MIN_REQUEST_QUOTA;
     dtxnData->userId = strdup(txnData->user);
+    dtxnData->tenantId = strdup(txnData->tenant);
     dtxnData->used=0;
     d_cli_send_msg(dtxnData);
 }
@@ -288,10 +289,11 @@ static void handle_request(TSHttpTxn txnp, TSCont contp){
     }else if (strcmp(HEADER_CMDVAL_START, cmdval)==0){
         httpTxnData->reqType = u_start;
         httpTxnData->user = getHeaderAttr(bufp, hdr_loc, HEADER_USERID, HEADER_USERID_LEN);
-        if (httpTxnData->user!=NULL){
+        httpTxnData->tenant = getHeaderAttr(bufp, hdr_loc, HEADER_TENANTID, HEADER_TENANTID_LEN);
+        if (httpTxnData->user!=NULL && httpTxnData->tenant!=NULL){
             start_session(txnp, contp);
         }else{
-            TSDebug(DEBUG_NAME, "userid/ip header not found for session start request.");
+            TSDebug(DEBUG_NAME, "userid/tenantid header not found for session start request.");
             http_req_shortcut_cb(txnp, contp, FLAG_AUTH_FAILED, RSP_REASON_VAL_REQHEAD_NOUSERIP);
         }
     }else if (strcmp(HEADER_CMDVAL_STOP, cmdval)==0){

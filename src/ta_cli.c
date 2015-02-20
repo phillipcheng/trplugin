@@ -140,6 +140,12 @@ void d_cli_send_msg(DiamTxnData * dtxn_data)
         val.os.data = (unsigned char *)dtxn_data->userId;
 		CHECK_FCT_DO( fd_msg_avp_setvalue( avp, &val ), goto out  );
 		CHECK_FCT_DO( fd_msg_avp_add( req, MSG_BRW_LAST_CHILD, avp ), goto out  );
+        //Set tenantid
+        CHECK_FCT_DO( fd_msg_avp_new ( ta_avp_tenantid, 0, &avp ), goto out  );
+        val.os.len = strlen(dtxn_data->tenantId);
+        val.os.data = (unsigned char *)dtxn_data->tenantId;
+        CHECK_FCT_DO( fd_msg_avp_setvalue( avp, &val ), goto out  );
+        CHECK_FCT_DO( fd_msg_avp_add( req, MSG_BRW_LAST_CHILD, avp ), goto out  );
 	}
     //set requestQuota
     {

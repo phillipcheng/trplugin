@@ -8,6 +8,7 @@ struct dict_object * ta_cmd_a = NULL;
 //real
 struct dict_object * ta_avp_optype = NULL; //start, stop, update
 struct dict_object * ta_avp_userid = NULL; //
+struct dict_object * ta_avp_tenantid = NULL;
 struct dict_object * ta_avp_requestQuota = NULL;
 struct dict_object * ta_avp_usedQuota = NULL;
 struct dict_object * ta_avp_grantedQuota = NULL;
@@ -65,7 +66,7 @@ int ta_dict_init(void)
         data.avp_basetype = AVP_TYPE_INTEGER32;
         CHECK_FCT(fd_dict_new( fd_g_config->cnf_dict, DICT_AVP, &data, NULL, &ta_avp_optype));
     }
-    //create user_id //in req
+    //create user_id //in req, optype=start
     {
         struct dict_avp_data data;
         data.avp_code = 400001;
@@ -76,7 +77,7 @@ int ta_dict_init(void)
         data.avp_basetype = AVP_TYPE_OCTETSTRING;
         CHECK_FCT(fd_dict_new( fd_g_config->cnf_dict, DICT_AVP, &data, NULL, &ta_avp_userid));
     }
-    //create requestQuota //in req
+    //create requestQuota //in req, optype!=stop
     {
         struct dict_avp_data data;
         data.avp_code = 400002;
@@ -87,7 +88,7 @@ int ta_dict_init(void)
         data.avp_basetype = AVP_TYPE_UNSIGNED64;
         CHECK_FCT(fd_dict_new( fd_g_config->cnf_dict, DICT_AVP, &data, NULL, &ta_avp_requestQuota));
     }
-    //create usedQuota //in req
+    //create usedQuota //in req, optype!=start
     {
         struct dict_avp_data data;
         data.avp_code = 400003;
@@ -98,7 +99,7 @@ int ta_dict_init(void)
         data.avp_basetype = AVP_TYPE_UNSIGNED64;
         CHECK_FCT(fd_dict_new( fd_g_config->cnf_dict, DICT_AVP, &data, NULL, &ta_avp_usedQuota));
     }
-    //create grantedQuota //in rsp
+    //create grantedQuota //in rsp, optype!=stop
     {
         struct dict_avp_data data;
         data.avp_code = 400004;
@@ -108,6 +109,17 @@ int ta_dict_init(void)
         data.avp_flag_val = AVP_FLAG_VENDOR;
         data.avp_basetype = AVP_TYPE_UNSIGNED64;
         CHECK_FCT(fd_dict_new( fd_g_config->cnf_dict, DICT_AVP, &data, NULL, &ta_avp_grantedQuota));
+    }
+    //create tenant_id //in req, optype=start
+    {
+        struct dict_avp_data data;
+        data.avp_code = 400005;
+        data.avp_vendor = ta_conf->vendor_id;
+        data.avp_name = "TenantId-AVP";
+        data.avp_flag_mask = AVP_FLAG_VENDOR;
+        data.avp_flag_val = AVP_FLAG_VENDOR;
+        data.avp_basetype = AVP_TYPE_OCTETSTRING;
+        CHECK_FCT(fd_dict_new( fd_g_config->cnf_dict, DICT_AVP, &data, NULL, &ta_avp_tenantid));
     }
     /* Now resolve some other useful AVPs */
     CHECK_FCT( fd_dict_search( fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME, "Session-Id", &ta_sess_id, ENOENT) );
@@ -165,7 +177,6 @@ int ta_dict_init(void)
         data.rule_min = 0;
         data.rule_avp = ta_dest_host;
         CHECK_FCT(fd_dict_new( fd_g_config->cnf_dict, DICT_RULE, &data, ta_cmd_r, NULL));
-        
     }
     
     return 0;

@@ -26,6 +26,7 @@ typedef struct {
     int flag; //indicate whether the authentication succeed or not
     const char* errmsg; //the text reason of failure
     char* user;
+    char* tenant;
     char* sessionid;
     u_req_type reqType;//user req type: start, use, stop
 } HttpTxnData;
@@ -43,6 +44,7 @@ typedef struct {
     bool httpReq; //this diameter msg is sent during http request or http response
     d_req_type reqType;//diameter req type: start, update, stop
     char* userId;//user id
+    char* tenantId;//tenant id
     char* d1sid;//diameter session id for no.1 diameter server, can be multiple.
     bool dserver_error;//when diameter server goes to error, let user use and record the usage, when the server recover, report all used.
 } DiamTxnData;
@@ -75,7 +77,7 @@ typedef struct {
 extern UserSession* user_sessions;
 extern int user_session_count_stat;//TSStat on user session
 
-UserSession * user_session_alloc(char* userid);
+UserSession * user_session_alloc(char* userid, char* tenantid);
 void uses_session_free(UserSession *data);
 void add_user_session(UserSession* us);
 UserSession* find_user_session(char* sid);
@@ -91,6 +93,9 @@ extern const char* HEADER_CMDVAL_NO;
 //
 extern const char* HEADER_USERID;
 extern const int HEADER_USERID_LEN;
+//
+extern const char* HEADER_TENANTID;
+extern const int HEADER_TENANTID_LEN;
 //
 extern const char* HEADER_SESSIONID;
 extern const int HEADER_SESSIONID_LEN;

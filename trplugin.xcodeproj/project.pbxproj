@@ -14,6 +14,7 @@
 		26532C231A86FC6500053103 /* libfdcore.1.2.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 26793BF91A86EDA8005E46B6 /* libfdcore.1.2.0.dylib */; };
 		26532C241A86FC6500053103 /* libfdproto.1.2.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 26793BF81A86EDA8005E46B6 /* libfdproto.1.2.0.dylib */; };
 		26532C271A86FF4800053103 /* definition.c in Sources */ = {isa = PBXBuildFile; fileRef = 26532C251A86FF4800053103 /* definition.c */; };
+		268EDE0B1A93EC6300AC6D41 /* srv_resource.c in Sources */ = {isa = PBXBuildFile; fileRef = 268EDE091A93EC6300AC6D41 /* srv_resource.c */; };
 		269697951A8833BA00FF45AD /* trplugin.c in Sources */ = {isa = PBXBuildFile; fileRef = 26B31AE01A83EAFE0065E119 /* trplugin.c */; };
 		26B31AE31A83EAFE0065E119 /* dc.c in Sources */ = {isa = PBXBuildFile; fileRef = 26B31AD71A83EAFE0065E119 /* dc.c */; };
 		26B31AE51A83EAFE0065E119 /* ta_cli.c in Sources */ = {isa = PBXBuildFile; fileRef = 26B31ADA1A83EAFE0065E119 /* ta_cli.c */; };
@@ -41,6 +42,8 @@
 		268EDE041A8AB84B00AC6D41 /* id1.dh.pem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = id1.dh.pem; sourceTree = "<group>"; };
 		268EDE051A8AB84B00AC6D41 /* id2.dh.pem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = id2.dh.pem; sourceTree = "<group>"; };
 		268EDE061A8AB8E600AC6D41 /* fd2.conf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = fd2.conf; sourceTree = "<group>"; };
+		268EDE081A8FB4CD00AC6D41 /* Makefile.apple */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Makefile.apple; sourceTree = "<group>"; };
+		268EDE091A93EC6300AC6D41 /* srv_resource.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = srv_resource.c; sourceTree = "<group>"; };
 		26B31AD11A83EAFE0065E119 /* dc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dc.h; sourceTree = "<group>"; };
 		26B31AD21A83EAFE0065E119 /* utarray.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utarray.h; sourceTree = "<group>"; };
 		26B31AD31A83EAFE0065E119 /* uthash.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = uthash.h; sourceTree = "<group>"; };
@@ -52,6 +55,7 @@
 		26B31ADC1A83EAFE0065E119 /* ta_dict.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ta_dict.c; sourceTree = "<group>"; };
 		26B31ADE1A83EAFE0065E119 /* test_app.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = test_app.c; sourceTree = "<group>"; };
 		26B31AE01A83EAFE0065E119 /* trplugin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = trplugin.c; sourceTree = "<group>"; };
+		26D68F381A94E38800BF5851 /* fdjdc.conf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = fdjdc.conf; sourceTree = "<group>"; };
 		26F7AF0B1A8642B10070EAAE /* ta_serv.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ta_serv.c; sourceTree = "<group>"; };
 		26F7AF0D1A8653180070EAAE /* trplugin.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = trplugin.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -98,6 +102,7 @@
 		268EDDFE1A8AB77D00AC6D41 /* conf */ = {
 			isa = PBXGroup;
 			children = (
+				26D68F381A94E38800BF5851 /* fdjdc.conf */,
 				268EDE061A8AB8E600AC6D41 /* fd2.conf */,
 				268EDE001A8AB84B00AC6D41 /* id1.privkey.pem */,
 				268EDE011A8AB84B00AC6D41 /* id2.privkey.pem */,
@@ -126,6 +131,7 @@
 		26B31AD61A83EAFE0065E119 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				268EDE081A8FB4CD00AC6D41 /* Makefile.apple */,
 				26532C1C1A86F27600053103 /* main.c */,
 				26793BFE1A86F1AD005E46B6 /* ta_cli_dummy.c */,
 				26793BFF1A86F1AD005E46B6 /* ta_serv_dummy.c */,
@@ -137,6 +143,7 @@
 				26B31ADA1A83EAFE0065E119 /* ta_cli.c */,
 				26B31AE01A83EAFE0065E119 /* trplugin.c */,
 				26532C251A86FF4800053103 /* definition.c */,
+				268EDE091A93EC6300AC6D41 /* srv_resource.c */,
 			);
 			path = src;
 			sourceTree = "<group>";
@@ -217,6 +224,7 @@
 				26B31AE31A83EAFE0065E119 /* dc.c in Sources */,
 				26B31AE61A83EAFE0065E119 /* ta_dict.c in Sources */,
 				26F7AF0C1A8642B10070EAAE /* ta_serv.c in Sources */,
+				268EDE0B1A93EC6300AC6D41 /* srv_resource.c in Sources */,
 				26B31AE71A83EAFE0065E119 /* test_app.c in Sources */,
 				26B31AE51A83EAFE0065E119 /* ta_cli.c in Sources */,
 				26532C271A86FF4800053103 /* definition.c in Sources */,

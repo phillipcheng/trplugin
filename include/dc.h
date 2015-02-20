@@ -88,6 +88,7 @@ extern struct dict_object * ta_cmd_a;
 //
 extern struct dict_object * ta_avp_optype; //start, stop, update
 extern struct dict_object * ta_avp_userid; //
+extern struct dict_object * ta_avp_tenantid;
 extern struct dict_object * ta_avp_requestQuota;
 extern struct dict_object * ta_avp_usedQuota;
 extern struct dict_object * ta_avp_grantedQuota;

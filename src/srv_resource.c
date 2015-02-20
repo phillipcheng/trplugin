@@ -10,11 +10,13 @@
 
 UserSession* user_sessions = NULL;
 int user_session_count_stat = 0;
+const char id_sep = '|';
 
-UserSession* user_session_alloc(char* userid){
+UserSession* user_session_alloc(char* userid, char* tenantId){
     //now sid is userid
     UserSession* s = malloc(sizeof(UserSession));
-    s->sid=strdup(userid);
+    s->sid = malloc(strlen(userid)+1+strlen(tenantId)+1);
+    sprintf(s->sid, "%s%c%s", userid, id_sep, tenantId);
     s->grantedQuota=0;
     s->leftQuota=0;
     s->dserver_error=false;
@@ -66,12 +68,16 @@ DiamTxnData* dtxn_alloc(TSHttpTxn txnp, TSCont contp, bool httpReq, d_req_type t
     data->httpReq = httpReq;
     data->reqType = type;
     data->userId=NULL;
+    data->tenantId = NULL;
     data->d1sid = NULL;
     data->dserver_error=false;
     return data;
 }
 
 void dtxn_free(DiamTxnData* data){
+    if (data->tenantId!=NULL){
+        TSfree(data->tenantId);
+    }
     if (data->userId!=NULL){
         TSfree(data->userId);
     }
@@ -87,6 +93,7 @@ HttpTxnData * http_txn_data_alloc() {
     data = TSmalloc(sizeof(HttpTxnData));
     data->flag = FLAG_NORMAL;
     data->user=NULL;
+    data->tenant = NULL;
     data->sessionid=NULL;
     return data;
 }
@@ -94,6 +101,9 @@ HttpTxnData * http_txn_data_alloc() {
 void http_txn_data_free(HttpTxnData *data) {
     if (data->user!=NULL){
         TSfree(data->user);
+    }
+    if (data->tenant!=NULL){
+        TSfree(data->tenant);
     }
     if (data->sessionid!=NULL){
         TSfree(data->sessionid);
