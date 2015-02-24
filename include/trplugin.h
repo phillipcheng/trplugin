@@ -24,7 +24,7 @@ typedef enum {u_start=1, u_use=2, u_stop=3} u_req_type;
 //context data for txn (req, rsp), put in the continuation for http response processor to get
 typedef struct {
     int flag; //indicate whether the authentication succeed or not
-    const char* errmsg; //the text reason of failure
+    int errid; //the text reason of failure
     char* user;
     char* tenant;
     char* sessionid;
@@ -36,7 +36,7 @@ typedef struct {
     TSHttpTxn txnp;
     TSCont contp;
     int flag;//indicate whether the authentication succeed or not
-    const char* errmsg;
+    int errid;
     uint64_t grantedQuota;//to take from rsp
     uint64_t requestQuota;
     uint64_t thisTimeNeed;//volume this req/rsp need, check against the granted to decide whether allow or block
@@ -62,7 +62,7 @@ void start_session_cb(DiamTxnData* dtdata);
 void update_session_cb(DiamTxnData* dtxn_data);
 void end_session_cb(DiamTxnData* dtxn_data);
 
-//user session structure, global user-sessions handler and methods
+//user session structure
 typedef struct {
     char*   sid;//
     uint64_t    grantedQuota;
@@ -72,16 +72,32 @@ typedef struct {
     int64_t errorUsed;//used when the dserver is down
     pthread_mutex_t		us_lock;//lock for this user session
     uint32_t    pending_d_req;//the number of pending diameter req
-    UT_hash_handle hh; /* makes this structure hashable */
+    time_t lastUpdateTime; //
 }UserSession;
-extern UserSession* user_sessions;
+//user session structure in a double linked list
+typedef struct UserSessionDL{
+    UserSession* us;
+    struct UserSessionDL *next, *prev;
+}UserSessionDL;
+//user session structure in a hashmap
+typedef struct{
+    char* sid;
+    UserSessionDL* usdl;
+    UT_hash_handle hh; /* makes this structure hashable */
+}UserSessionHM;
+
+extern UserSessionHM* user_session_hashmap;
+extern UserSessionDL* user_session_dlinkedlist;
 extern int user_session_count_stat;//TSStat on user session
 
 UserSession * user_session_alloc(char* userid, char* tenantid);
-void uses_session_free(UserSession *data);
+char* get_session_id(char* userid, char* tenantid);
 void add_user_session(UserSession* us);
-UserSession* find_user_session(char* sid);
 void delete_user_session(char* sid);
+UserSession* find_user_session(char* sid);
+void update_user_session(UserSession* ushm);
+
+void* checkSessionTimeout(void* ptr);
 
 //
 extern const char* HEADER_CMD;
@@ -100,14 +116,13 @@ extern const int HEADER_TENANTID_LEN;
 extern const char* HEADER_SESSIONID;
 extern const int HEADER_SESSIONID_LEN;
 //
-extern const char* RSP_HEADER_REASON;
-extern const char* RSP_REASON_VAL_SUCCESS;
-extern const char* RSP_REASON_VAL_NOREQHEAD;
-extern const char* RSP_REASON_VAL_REQHEAD_NOUSERIP;
-extern const char* RSP_REASON_VAL_NOUSER;
-extern const char* RSP_REASON_VAL_NOBAL;
-extern const char* RSP_REASON_VAL_NOIPSESSION;
-extern const char* RSP_REASON_VAL_USERONLINE;
-extern const char* RSP_REASON_VAL_IPINUSE;
+extern const char* RSP_HEADER_REASON;//header field name
+extern int RSP_REASON_VAL_SUCCESS;
+extern int RSP_REASON_VAL_NOREQHEAD;
+extern int RSP_REASON_VAL_REQHEAD_MISSINGINFO;
+extern int RSP_REASON_VAL_NOUSER;
+extern int RSP_REASON_VAL_NOBAL;
+extern int RSP_REASON_VAL_NOUSERSESSION;
+extern int RSP_REASON_VAL_USERONLINE;
 
 #endif

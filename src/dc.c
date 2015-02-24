@@ -10,13 +10,14 @@ static int main_cmdline(int argc, char *argv[]);
 
 static char *conffile = NULL;
 
-int dcinit(int argc, const char * argv[])
+int dcinit(int argc, char * argv[])
 {
     fprintf(stderr, "in dcinit.");
     
     int ret;
     
     /* Parse the command-line */
+    //this warning can be ignored
     ret = main_cmdline(argc, argv);
     if (ret != 0) {
         return ret;

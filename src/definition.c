@@ -30,16 +30,15 @@ const int HEADER_SESSIONID_LEN= 10;
 
 //Http Custom Rsp Headers
 const char* RSP_HEADER_REASON = "rejectreason";
-const char* RSP_REASON_VAL_SUCCESS="command succeed";
-const char* RSP_REASON_VAL_NOREQHEAD="no req head";
-const char* RSP_REASON_VAL_REQHEAD_NOUSERIP="no user/ip in the start request header";
-const char* RSP_REASON_VAL_NOUSER="no such user";
-const char* RSP_REASON_VAL_NOBAL="no balance";
-const char* RSP_REASON_VAL_NOIPSESSION="no ip session";
-const char* RSP_REASON_VAL_USERONLINE="user already online";
-const char* RSP_REASON_VAL_IPINUSE="ip already in use";
+int RSP_REASON_VAL_SUCCESS=0;
+int RSP_REASON_VAL_NOREQHEAD=1;
+int RSP_REASON_VAL_REQHEAD_MISSINGINFO=2;
+int RSP_REASON_VAL_NOUSER=3;
+int RSP_REASON_VAL_NOBAL=4;
+int RSP_REASON_VAL_NOUSERSESSION=5;
+int RSP_REASON_VAL_USERONLINE=6;
 
-const int FLAG_AUTH_FAILED=1;
+const int FLAG_AUTH_FAILED=1;//set the rsp_header_reason
 const int FLAG_AUTH_SUCC=2;
 const int FLAG_NORMAL=3;
 

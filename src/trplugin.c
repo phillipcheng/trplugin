@@ -6,7 +6,22 @@
 #include "ts/ts.h"
 #include "trplugin.h"
 
-char* getHeaderAttr(TSMBuffer bufp, TSMLoc hdr_loc, const char* name, int length){
+void debugBytes(TSHttpTxn txnp, int event){
+    long clientReqHdrBytes = TSHttpTxnClientReqHdrBytesGet(txnp);
+    long clientReqBdyBytes = TSHttpTxnClientReqBodyBytesGet(txnp);
+    long clientRspHdrBytes = TSHttpTxnClientRespHdrBytesGet(txnp);
+    long clientRspBdyBytes = TSHttpTxnClientRespBodyBytesGet(txnp);
+    long serverReqHdrBytes = TSHttpTxnServerReqHdrBytesGet(txnp);
+    long serverReqBdyBytes = TSHttpTxnServerReqBodyBytesGet(txnp);
+    long serverRspHdrBytes = TSHttpTxnServerRespHdrBytesGet(txnp);
+    long serverRspBdyBytes = TSHttpTxnServerRespBodyBytesGet(txnp);
+    TSDebug(DEBUG_NAME, "at event:%d, clientReqHdrBytes:%ld, clientReqBdyBytes:%ld, clientRspHdrBytes:%ld, clientRspBdyBytes:%ld, \
+            serverReqHdrBytes:%ld, serverReqBdyBytes:%ld, serverRspHdrBytes:%ld, serverRspBdyBytes:%ld",
+            event, clientReqHdrBytes, clientReqBdyBytes, clientRspHdrBytes, clientRspBdyBytes,
+            serverReqHdrBytes, serverReqBdyBytes, serverRspHdrBytes, serverRspBdyBytes);
+}
+
+char* getHeaderStringAttr(TSMBuffer bufp, TSMLoc hdr_loc, const char* name, int length){
     TSMLoc cmdfield_loc = TSMimeHdrFieldFind(bufp, hdr_loc, name, length);
     const char *cmdval=NULL;
     int cmdval_length;
@@ -38,7 +53,17 @@ char* getClientIp(TSHttpTxn txnp){
     return incoming_str;
 }
 
-void setHeaderAttr(TSMBuffer bufp, TSMLoc hdr_loc, const char* name, const char* val){
+void setHeaderIntAttr(TSMBuffer bufp, TSMLoc hdr_loc, const char* name, int val){
+    //TSDebug(DEBUG_NAME, "set attribute:%s val:%s", name, val);
+    TSMLoc field_loc;
+    TSMimeHdrFieldCreate(bufp, hdr_loc, &field_loc);
+    TSMimeHdrFieldNameSet(bufp, hdr_loc, field_loc, name, (int)strlen(name));
+    TSMimeHdrFieldValueIntInsert(bufp, hdr_loc, field_loc, -1, val);
+    TSMimeHdrFieldAppend(bufp, hdr_loc, field_loc);
+    TSHandleMLocRelease(bufp, hdr_loc, field_loc);
+}
+
+void setHeaderStringAttr(TSMBuffer bufp, TSMLoc hdr_loc, const char* name, const char* val){
     //TSDebug(DEBUG_NAME, "set attribute:%s val:%s", name, val);
     TSMLoc field_loc;
     TSMimeHdrFieldCreate(bufp, hdr_loc, &field_loc);
@@ -57,9 +82,9 @@ void setHttpHdrStatus(TSHttpTxn txnp, int status){
     }
 }
 
-void http_req_shortcut_cb(TSHttpTxn txnp, TSCont contp, int flag, const char* errormsg){
+void http_req_shortcut_cb(TSHttpTxn txnp, TSCont contp, int flag,int errid){
     HttpTxnData* ctx = TSContDataGet(contp);
-    ctx->errmsg = errormsg;
+    ctx->errid = errid;
     ctx->flag = flag;
     TSHttpTxnHookAdd(txnp, TS_HTTP_SEND_RESPONSE_HDR_HOOK, contp);
     TSHttpTxnReenable(txnp, TS_EVENT_HTTP_ERROR);
@@ -90,7 +115,7 @@ void start_session_cb(DiamTxnData* dtdata){
         ctx->sessionid = strdup(us->sid);
         http_req_shortcut_cb(dtdata->txnp, dtdata->contp, FLAG_AUTH_SUCC, RSP_REASON_VAL_SUCCESS);
     }else{
-        http_req_shortcut_cb(dtdata->txnp, dtdata->contp, dtdata->flag, dtdata->errmsg);
+        http_req_shortcut_cb(dtdata->txnp, dtdata->contp, dtdata->flag, dtdata->errid);
     }
     
     dtxn_free(dtdata);
@@ -119,7 +144,7 @@ void end_session(TSHttpTxn txnp, TSCont contp){
     UserSession * us = find_user_session(txnData->sessionid);
     if (us==NULL){
         TSDebug(DEBUG_NAME, "error: req: end session: session not found for id: %s", txnData->sessionid);
-        http_req_shortcut_cb(txnp, contp, FLAG_AUTH_FAILED, RSP_REASON_VAL_NOIPSESSION);
+        http_req_shortcut_cb(txnp, contp, FLAG_AUTH_FAILED, RSP_REASON_VAL_NOUSERSESSION);
     }else{
         DiamTxnData* dtxn_data = dtxn_alloc(txnp, contp, true, d_stop);
         dtxn_data->used = us->grantedQuota-us->leftQuota;
@@ -185,22 +210,26 @@ void postprocess_any_request(TSHttpTxn txnp, TSCont contp){
     long clientRspBdyBytes = TSHttpTxnClientRespBodyBytesGet(txnp);
     long len = clientRspHdrBytes+clientRspBdyBytes;
     HttpTxnData* txnData = TSContDataGet(contp);
-    UserSession* us = find_user_session(txnData->sessionid);
-    if (us!=NULL){
-        pthread_mutex_lock(&us->us_lock);
-        if (us->dserver_error){
-            us->errorUsed+=len;
-            TSDebug(DEBUG_NAME, "postprocess any request, session id:%s, usage this time:%ld, errorUsed:%llu",
-                    txnData->sessionid, len, us->errorUsed);
-        }else{
-            us->leftQuota-=len;
-            TSDebug(DEBUG_NAME, "postprocess any request, session id:%s, usage this time:%ld, leftQuota:%lld",
-                    txnData->sessionid, len, us->leftQuota);
-        }
-        pthread_mutex_unlock(&us->us_lock);
+    if (txnData->reqType==u_start && txnData->flag==FLAG_AUTH_FAILED){
+        //failed in start-authentication
     }else{
-        TSDebug(DEBUG_NAME, "postprocess any request, session not found for %s",
-                txnData->sessionid);
+        UserSession* us = find_user_session(txnData->sessionid);
+        if (us!=NULL){
+            pthread_mutex_lock(&us->us_lock);
+            if (us->dserver_error){
+                us->errorUsed+=len;
+                TSDebug(DEBUG_NAME, "postprocess any request, session id:%s, usage this time:%ld, errorUsed:%llu",
+                        txnData->sessionid, len, us->errorUsed);
+            }else{
+                us->leftQuota-=len;
+                TSDebug(DEBUG_NAME, "postprocess any request, session id:%s, usage this time:%ld, leftQuota:%lld",
+                        txnData->sessionid, len, us->leftQuota);
+            }
+            pthread_mutex_unlock(&us->us_lock);
+        }else{
+            TSDebug(DEBUG_NAME, "postprocess any request, session not found for %s",
+                    txnData->sessionid);
+        }
     }
 }
 
@@ -210,7 +239,7 @@ void update_session(TSHttpTxn txnp, TSCont contp, long len, bool req){
     if (us==NULL){
         TSDebug(DEBUG_NAME, "rsp:%d, use session, session not found for id:%s", req, txnData->sessionid);
         if (req){
-            http_req_shortcut_cb(txnp, contp, FLAG_AUTH_FAILED, RSP_REASON_VAL_NOIPSESSION);
+            http_req_shortcut_cb(txnp, contp, FLAG_AUTH_FAILED, RSP_REASON_VAL_NOUSERSESSION);
         }else{
             setHttpHdrStatus(txnp, TS_HTTP_STATUS_UNAUTHORIZED);
             TSHttpTxnReenable(txnp, TS_EVENT_HTTP_CONTINUE);
@@ -221,7 +250,7 @@ void update_session(TSHttpTxn txnp, TSCont contp, long len, bool req){
         if (us->leftQuota>=len || us->dserver_error || us->pending_d_req>0){
             //let it pass under one of these conditions
             //1. has enough quota. 2.diameter server is not responding 3.there is pending d_request (under asking)
-            TSDebug(DEBUG_NAME, "allow access for session %s with address %p:leftQuota:%llu, this len:%lld, dserver_error:%d, pending_d_req:%d",
+            TSDebug(DEBUG_NAME, "allow access for session %s with address %p:leftQuota:%llu, this len:%ld, dserver_error:%d, pending_d_req:%d",
                     us->sid, us, us->leftQuota, len, us->dserver_error, us->pending_d_req);
             if (us->leftQuota>=len){
                 us->leftQuota-=len;
@@ -275,36 +304,44 @@ static void handle_request(TSHttpTxn txnp, TSCont contp){
         TSHandleMLocRelease(bufp, NULL, hdr_loc);
         return;
     }
-    char* cmdval = getHeaderAttr(bufp, hdr_loc, HEADER_CMD, HEADER_CMD_LEN);
+    char* cmdval = getHeaderStringAttr(bufp, hdr_loc, HEADER_CMD, HEADER_CMD_LEN);
     if (cmdval==NULL){//this is normal request, interim
         httpTxnData->reqType = u_use;
         long l_req_len =TSHttpTxnClientReqHdrBytesGet(txnp)+TSHttpTxnClientReqBodyBytesGet(txnp);
-        httpTxnData->sessionid = getHeaderAttr(bufp, hdr_loc, HEADER_SESSIONID, HEADER_SESSIONID_LEN);
+        httpTxnData->sessionid = getHeaderStringAttr(bufp, hdr_loc, HEADER_SESSIONID, HEADER_SESSIONID_LEN);
         if (httpTxnData->sessionid!=NULL){
             update_session(txnp, contp, l_req_len, true);
         }else{
             TSDebug(DEBUG_NAME, "req: normal usage request header has not sessionid attribute.");
-            http_req_shortcut_cb(txnp, contp, FLAG_AUTH_FAILED, RSP_REASON_VAL_REQHEAD_NOUSERIP);
+            http_req_shortcut_cb(txnp, contp, FLAG_AUTH_FAILED, RSP_REASON_VAL_REQHEAD_MISSINGINFO);
         }
     }else if (strcmp(HEADER_CMDVAL_START, cmdval)==0){
         httpTxnData->reqType = u_start;
-        httpTxnData->user = getHeaderAttr(bufp, hdr_loc, HEADER_USERID, HEADER_USERID_LEN);
-        httpTxnData->tenant = getHeaderAttr(bufp, hdr_loc, HEADER_TENANTID, HEADER_TENANTID_LEN);
+        httpTxnData->user = getHeaderStringAttr(bufp, hdr_loc, HEADER_USERID, HEADER_USERID_LEN);
+        httpTxnData->tenant = getHeaderStringAttr(bufp, hdr_loc, HEADER_TENANTID, HEADER_TENANTID_LEN);
         if (httpTxnData->user!=NULL && httpTxnData->tenant!=NULL){
-            start_session(txnp, contp);
+            //check whether session exists
+            char* sid = get_session_id(httpTxnData->user, httpTxnData->tenant);
+            UserSession* us = find_user_session(sid);
+            free(sid);
+            if (us!=NULL){
+                http_req_shortcut_cb(txnp, contp, FLAG_AUTH_FAILED, RSP_REASON_VAL_USERONLINE);
+            }else{
+                start_session(txnp, contp);
+            }
         }else{
             TSDebug(DEBUG_NAME, "userid/tenantid header not found for session start request.");
-            http_req_shortcut_cb(txnp, contp, FLAG_AUTH_FAILED, RSP_REASON_VAL_REQHEAD_NOUSERIP);
+            http_req_shortcut_cb(txnp, contp, FLAG_AUTH_FAILED, RSP_REASON_VAL_REQHEAD_MISSINGINFO);
         }
     }else if (strcmp(HEADER_CMDVAL_STOP, cmdval)==0){
         httpTxnData->reqType = u_stop;
-        httpTxnData->sessionid = getHeaderAttr(bufp, hdr_loc, HEADER_SESSIONID, HEADER_SESSIONID_LEN);
+        httpTxnData->sessionid = getHeaderStringAttr(bufp, hdr_loc, HEADER_SESSIONID, HEADER_SESSIONID_LEN);
         if (httpTxnData->sessionid!=NULL){
             end_session(txnp, contp);
         }else{
             TSDebug(DEBUG_NAME, "sessionid header not found for end session request.");
             httpTxnData->flag = FLAG_AUTH_FAILED;//not normal anymore
-            http_req_shortcut_cb(txnp, contp, FLAG_AUTH_FAILED, RSP_REASON_VAL_REQHEAD_NOUSERIP);
+            http_req_shortcut_cb(txnp, contp, FLAG_AUTH_FAILED, RSP_REASON_VAL_REQHEAD_MISSINGINFO);
         }
     }else{
         TSDebug(DEBUG_NAME, "command not supported: %s\n", cmdval);
@@ -314,21 +351,6 @@ static void handle_request(TSHttpTxn txnp, TSCont contp){
     }
     TSHandleMLocRelease(bufp, TS_NULL_MLOC, hdr_loc);
     return;
-}
-
-void debugBytes(TSHttpTxn txnp, int event){
-    long clientReqHdrBytes = TSHttpTxnClientReqHdrBytesGet(txnp);
-    long clientReqBdyBytes = TSHttpTxnClientReqBodyBytesGet(txnp);
-    long clientRspHdrBytes = TSHttpTxnClientRespHdrBytesGet(txnp);
-    long clientRspBdyBytes = TSHttpTxnClientRespBodyBytesGet(txnp);
-    long serverReqHdrBytes = TSHttpTxnServerReqHdrBytesGet(txnp);
-    long serverReqBdyBytes = TSHttpTxnServerReqBodyBytesGet(txnp);
-    long serverRspHdrBytes = TSHttpTxnServerRespHdrBytesGet(txnp);
-    long serverRspBdyBytes = TSHttpTxnServerRespBodyBytesGet(txnp);
-    TSDebug(DEBUG_NAME, "at event:%d, clientReqHdrBytes:%ld, clientReqBdyBytes:%ld, clientRspHdrBytes:%ld, clientRspBdyBytes:%ld, \
-            serverReqHdrBytes:%ld, serverReqBdyBytes:%ld, serverRspHdrBytes:%ld, serverRspBdyBytes:%ld",
-            event, clientReqHdrBytes, clientReqBdyBytes, clientRspHdrBytes, clientRspBdyBytes,
-            serverReqHdrBytes, serverReqBdyBytes, serverRspHdrBytes, serverRspBdyBytes);
 }
 
 const char* FLAG_STR_SUCCESS="auth_success";
@@ -357,11 +379,11 @@ static void handle_response(TSHttpTxn txnp, TSCont contp) {
                     TSHttpHdrStatusSet(bufp, hdr_loc, TS_HTTP_STATUS_OK);
                 }else{
                     TSHttpHdrStatusSet(bufp, hdr_loc, TS_HTTP_STATUS_UNAUTHORIZED);
-                    setHeaderAttr(bufp, hdr_loc, RSP_HEADER_REASON, txn_data->errmsg);
+                    setHeaderIntAttr(bufp, hdr_loc, RSP_HEADER_REASON, txn_data->errid);
                 }
             }else if (txn_data->flag==FLAG_AUTH_SUCC){
                 TSHttpHdrStatusSet(bufp, hdr_loc, TS_HTTP_STATUS_OK);
-                setHeaderAttr(bufp, hdr_loc, HEADER_SESSIONID, txn_data->sessionid);
+                setHeaderStringAttr(bufp, hdr_loc, HEADER_SESSIONID, txn_data->sessionid);
             }else if (txn_data->flag==FLAG_NORMAL){
                 goon = false; //continue will be re-enabled by callback
                 long l_req_cnt_len = TSHttpTxnClientRespHdrBytesGet(txnp) + TSHttpTxnClientRespBodyBytesGet(txnp);
@@ -438,11 +460,19 @@ void TSPluginInit(int argc, const char *argv[])
 {
     TSDebug(DEBUG_NAME, "Load TRPlugin......\n");
     
+    //warning is ok
     dcinit(argc, argv);
     
     TSCont    cont = TSContCreate(tr_global_plugin, NULL);
     TSHttpHookAdd(TS_HTTP_TXN_START_HOOK, cont);
     
+    pthread_t sessionTimeoutThread;
+    //start session timeout thread
+    if(pthread_create(&sessionTimeoutThread, NULL, checkSessionTimeout, NULL)) {
+        TSDebug(DEBUG_NAME, "Error creating Session Timeout Thread.\n");
+    }else{
+        TSDebug(DEBUG_NAME, "Session Timeout Thread Created.\n");
+    }
     //define stat
     user_session_count_stat = TSStatCreate(user_session_count_name, TS_RECORDDATATYPE_INT, TS_STAT_NON_PERSISTENT, TS_STAT_SYNC_COUNT);
     

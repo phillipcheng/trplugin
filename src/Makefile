@@ -7,7 +7,7 @@ LDFLAGS_APP	= -g -L/opt/ats/lib -L/opt/fd/lib -ltsconfig -ltsmgmt -ltsutil -lfdc
 LDFLAGS	= -g -L/opt/ats/lib -L/opt/fd/lib -ltsconfig -ltsmgmt -ltsutil -lfdcore -lfdproto -lpthread -shared
 DS_LDFLAGS=-g -L/opt/fd/lib -lfdcore -lfdproto -lpthread -shared
 
-SRC_PLUGIN	= trplugin.c dc.c ta_cli.c test_app.c ta_dict.c ta_serv_dummy.c definition.c srv_resource.c
+SRC_PLUGIN	= trplugin.c dc.c ta_cli.c test_app.c ta_dict.c ta_serv_dummy.c definition.c srv_resource.c timeout_thread.c
 SRC_DS	= ta_serv.c test_app.c ta_dict.c ta_cli_dummy.c definition.c
 
 OBJS_PLUGIN	= $(SRC_PLUGIN:.c=.o)

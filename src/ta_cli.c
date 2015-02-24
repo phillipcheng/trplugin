@@ -39,11 +39,11 @@ void ta_cb_ans(void * data, struct msg ** msg)
                     if (dtxn_data->grantedQuota<dtxn_data->thisTimeNeed){
                         dtxn_data->flag = FLAG_AUTH_FAILED;
                         if (resultCode == DIAMETER_AUTHORIZATION_REJECTED){
-                            dtxn_data->errmsg = RSP_REASON_VAL_NOUSER;
+                            dtxn_data->errid = RSP_REASON_VAL_NOUSER;
                         }else if (resultCode == DIAMETER_UNKNOWN_SESSION_ID){
-                            dtxn_data->errmsg = RSP_REASON_VAL_NOIPSESSION;
+                            dtxn_data->errid = RSP_REASON_VAL_NOUSERSESSION;
                         }else{
-                            dtxn_data->errmsg = RSP_REASON_VAL_NOBAL;
+                            dtxn_data->errid = RSP_REASON_VAL_NOBAL;
                         }
                     }else{
                         dtxn_data->flag = FLAG_AUTH_SUCC;

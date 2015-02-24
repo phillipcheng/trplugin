@@ -8,50 +8,99 @@
 
 #include "trplugin.h"
 
-UserSession* user_sessions = NULL;
+UserSessionHM* user_session_hashmap = NULL;
+UserSessionDL* user_session_dlinkedlist = NULL;
 int user_session_count_stat = 0;
 const char id_sep = '|';
 
 UserSession* user_session_alloc(char* userid, char* tenantId){
-    //now sid is userid
-    UserSession* s = malloc(sizeof(UserSession));
-    s->sid = malloc(strlen(userid)+1+strlen(tenantId)+1);
-    sprintf(s->sid, "%s%c%s", userid, id_sep, tenantId);
-    s->grantedQuota=0;
-    s->leftQuota=0;
-    s->dserver_error=false;
-    s->errorUsed=0;
-    s->pending_d_req=0;
-    return s;
+    //set the sid
+    UserSession* us = malloc(sizeof(UserSession));
+    us->sid = get_session_id(userid, tenantId);
+    us->grantedQuota=0;
+    us->leftQuota=0;
+    us->dserver_error=false;
+    us->errorUsed=0;
+    us->pending_d_req=0;
+    us->lastUpdateTime=time(NULL);
+    return us;
 }
 
-void user_session_free(UserSession *data){
-    if (data->sid!=NULL){
-        free(data->sid);
-    }
-    if (data->d1sid!=NULL){
-        free(data->d1sid);
-    }
-    free(data);
+char* get_session_id(char* userid, char* tenantId){
+    char* sid = malloc(strlen(userid)+1+strlen(tenantId)+1);
+    sprintf(sid, "%s%c%s", userid, id_sep, tenantId);
+    return sid;
 }
 
 void add_user_session(UserSession* us){
-    HASH_ADD_STR(user_sessions, sid, us);
-    //TSStatIntIncrement(user_session_count_stat, 1l);
+    UserSessionHM* ushm = malloc(sizeof(UserSessionHM));
+    ushm->sid = strdup(us->sid);
+    UserSessionDL* usdl = malloc(sizeof(UserSessionDL));
+    usdl->us = us;
+    DL_APPEND(user_session_dlinkedlist, usdl);
+    ushm->usdl = usdl;
+    HASH_ADD_STR(user_session_hashmap, sid, ushm);
 }
 
-UserSession* find_user_session(char* sid){
-    UserSession* s;
-    HASH_FIND_STR(user_sessions, sid, s);
-    return s;
+void user_session_free(UserSession *us){
+    if(us!=NULL){
+        if (us->d1sid!=NULL){
+            free(us->d1sid);
+        }
+        if (us->sid!=NULL){
+            free(us->sid);
+        }
+        free(us);
+    }
 }
 
 void delete_user_session(char* sid){
-    UserSession* s = find_user_session(sid);
-    if (s!=NULL){
-        HASH_DEL(user_sessions, s);
-        user_session_free(s);
-        //TSStatIntDecrement(user_session_count_stat, 1l);
+    UserSessionHM* ushm;
+    HASH_FIND_STR(user_session_hashmap, sid, ushm);
+    if (ushm!=NULL){
+        HASH_DEL(user_session_hashmap, ushm);
+        if (ushm->sid!=NULL){
+            free(ushm->sid);
+        }
+        UserSessionDL* usdl = ushm->usdl;
+        if (usdl!=NULL){
+            UserSession* us = usdl->us;
+            user_session_free(us);
+            DL_DELETE(user_session_dlinkedlist, usdl);
+            free(usdl);
+        }
+        free(ushm);
+    }
+}
+
+UserSession* find_user_session(char* sid){
+    UserSessionHM* ushm;
+    HASH_FIND_STR(user_session_hashmap, sid, ushm);
+    if (ushm!=NULL){
+        UserSessionDL* usdl = ushm->usdl;
+        if (usdl!=NULL){
+            return usdl->us;
+        }else{
+            return NULL;
+        }
+    }else{
+        return NULL;
+    }
+}
+
+void update_user_session(UserSession* us){
+    UserSessionHM* ushm;
+    HASH_FIND_STR(user_session_hashmap, us->sid, ushm);
+    if (ushm!=NULL){
+        UserSessionDL* usdl = ushm->usdl;
+        if (usdl!=NULL){
+            UserSession* us = usdl->us;
+            //set the last update time
+            us->lastUpdateTime = time(NULL);
+            //move the session to the tail (newest)
+            DL_DELETE(user_session_dlinkedlist, usdl);
+            DL_APPEND(user_session_dlinkedlist, usdl);
+        }
     }
 }
 
@@ -60,7 +109,7 @@ DiamTxnData* dtxn_alloc(TSHttpTxn txnp, TSCont contp, bool httpReq, d_req_type t
     DiamTxnData* data = TSmalloc(sizeof(DiamTxnData));
     data->txnp=txnp;
     data->contp=contp;
-    data->errmsg=NULL;
+    data->errid=RSP_REASON_VAL_SUCCESS;
     data->flag=FLAG_NORMAL;
     data->grantedQuota=0;
     data->requestQuota=0;

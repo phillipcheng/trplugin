@@ -17,6 +17,7 @@
 #include <getopt.h>
 #include <locale.h>
 #include "uthash.h"
+#include "utlist.h"
 
 typedef enum { false, true } bool;
 typedef enum {d_start=1, d_update=2, d_stop=3} d_req_type;//diameter request op type
@@ -74,7 +75,7 @@ void ta_serv_fini(void);
 /* Initialize dictionary definitions */
 int ta_dict_init(void);
 
-int dcinit(int argc, const char * argv[]);
+int dcinit(int argc, char * argv[]);
 
 int ta_entry(char * conffile);
 
