@@ -14,7 +14,6 @@ const long us_timeout_check_interval=30;//seconds
 void* checkSessionTimeout(void* ptr){
     time_t now;
     while(true){
-        TSDebug(DEBUG_NAME, "check timeout session thread runs.\n");
         sleep(us_timeout_check_interval);
         now = time(NULL);
         UserSessionDL* elt, *tmp;
