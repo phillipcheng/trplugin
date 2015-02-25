@@ -23,7 +23,7 @@ void* checkSessionTimeout(void* ptr){
                     TSDebug(DEBUG_NAME, "Session timed out for user session: %s\n", elt->us->sid);
                     delete_user_session(elt->us->sid);
                 }else{
-                    TSDebug(DEBUG_NAME, "have session in queue id:%s, lastupdate till now: %ld\n", elt->us->sid, now-elt->us->lastUpdateTime);
+                    //TSDebug(DEBUG_NAME, "have session in queue id:%s, lastupdate till now: %ld\n", elt->us->sid, now-elt->us->lastUpdateTime);
                 }
             }else{
                 TSDebug(DEBUG_NAME, "null session found.\n");
