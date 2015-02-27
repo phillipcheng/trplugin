@@ -110,16 +110,16 @@ void d_cli_send_msg(DiamTxnData * dtxn_data)
 	/* Set the Destination-Realm AVP */
 	{
 		CHECK_FCT_DO( fd_msg_avp_new ( ta_dest_realm, 0, &avp ), goto out  );
-		val.os.data = (unsigned char *)(ta_conf->dest_realm);
-		val.os.len  = strlen(ta_conf->dest_realm);
+		val.os.data = (unsigned char *)(tr_conf->diameterDestRealm);
+		val.os.len  = strlen(tr_conf->diameterDestRealm);
 		CHECK_FCT_DO( fd_msg_avp_setvalue( avp, &val ), goto out  );
 		CHECK_FCT_DO( fd_msg_avp_add( req, MSG_BRW_LAST_CHILD, avp ), goto out  );
 	}
 	/* Set the Destination-Host AVP if needed*/
-	if (ta_conf->dest_host) {
+	if (tr_conf->diameterDestHost) {
 		CHECK_FCT_DO( fd_msg_avp_new ( ta_dest_host, 0, &avp ), goto out  );
-		val.os.data = (unsigned char *)(ta_conf->dest_host);
-		val.os.len  = strlen(ta_conf->dest_host);
+		val.os.data = (unsigned char *)(tr_conf->diameterDestHost);
+		val.os.len  = strlen(tr_conf->diameterDestHost);
 		CHECK_FCT_DO( fd_msg_avp_setvalue( avp, &val ), goto out  );
 		CHECK_FCT_DO( fd_msg_avp_add( req, MSG_BRW_LAST_CHILD, avp ), goto out  );
 	}
@@ -150,7 +150,7 @@ void d_cli_send_msg(DiamTxnData * dtxn_data)
     //set requestQuota
     {
         CHECK_FCT_DO( fd_msg_avp_new ( ta_avp_requestQuota, 0, &avp ), goto out  );
-        uint64_t reqSize = dtxn_data->requestQuota > MIN_REQUEST_QUOTA? dtxn_data->requestQuota:MIN_REQUEST_QUOTA;
+        uint64_t reqSize = dtxn_data->requestQuota > tr_conf->minRequestQuota? dtxn_data->requestQuota:tr_conf->minRequestQuota;
         val.u64 = reqSize;
         CHECK_FCT_DO( fd_msg_avp_setvalue( avp, &val ), goto out  );
         CHECK_FCT_DO( fd_msg_avp_add( req, MSG_BRW_LAST_CHILD, avp ), goto out  );
@@ -165,7 +165,7 @@ void d_cli_send_msg(DiamTxnData * dtxn_data)
 	
 	/* Log sending the message */
 	TSDebug(DEBUG_NAME, "SEND %s,%llu to '%s' (%s)\n", dtxn_data->userId, dtxn_data->requestQuota,
-            ta_conf->dest_realm, ta_conf->dest_host?:"-" );
+            tr_conf->diameterDestRealm, tr_conf->diameterDestHost?:"-" );
 		
 	/* Send the request */
 	CHECK_FCT_DO( fd_msg_send( &req, ta_cb_ans, dtxn_data), goto out );

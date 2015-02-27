@@ -125,7 +125,7 @@ void start_session(TSHttpTxn txnp, TSCont contp){
     //ask AAA server for quota and create the session in the call back if success
     DiamTxnData* dtxnData = dtxn_alloc(txnp, contp, true, d_start);
     HttpTxnData* txnData=TSContDataGet(contp);
-    dtxnData->requestQuota = MIN_REQUEST_QUOTA;
+    dtxnData->requestQuota = tr_conf->minRequestQuota;
     dtxnData->userId = strdup(txnData->user);
     dtxnData->tenantId = strdup(txnData->tenant);
     dtxnData->used=0;

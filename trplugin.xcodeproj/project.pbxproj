@@ -12,9 +12,8 @@
 		26532C221A86FC5300053103 /* libtsconfig.5.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 26793BF21A86ED7C005E46B6 /* libtsconfig.5.dylib */; };
 		26532C231A86FC6500053103 /* libfdcore.1.2.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 26793BF91A86EDA8005E46B6 /* libfdcore.1.2.0.dylib */; };
 		26532C241A86FC6500053103 /* libfdproto.1.2.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 26793BF81A86EDA8005E46B6 /* libfdproto.1.2.0.dylib */; };
-		26D68F3D1A990F9D00BF5851 /* dc.c in Sources */ = {isa = PBXBuildFile; fileRef = 26B31AD71A83EAFE0065E119 /* dc.c */; };
+		26D68F3D1A990F9D00BF5851 /* trconfig.c in Sources */ = {isa = PBXBuildFile; fileRef = 26B31AD71A83EAFE0065E119 /* trconfig.c */; };
 		26D68F3E1A990F9D00BF5851 /* ta_dict.c in Sources */ = {isa = PBXBuildFile; fileRef = 26B31ADC1A83EAFE0065E119 /* ta_dict.c */; };
-		26D68F3F1A990F9D00BF5851 /* test_app.c in Sources */ = {isa = PBXBuildFile; fileRef = 26B31ADE1A83EAFE0065E119 /* test_app.c */; };
 		26D68F401A990F9D00BF5851 /* ta_cli.c in Sources */ = {isa = PBXBuildFile; fileRef = 26B31ADA1A83EAFE0065E119 /* ta_cli.c */; };
 		26D68F411A990F9D00BF5851 /* trplugin.c in Sources */ = {isa = PBXBuildFile; fileRef = 26B31AE01A83EAFE0065E119 /* trplugin.c */; };
 		26D68F421A990F9D00BF5851 /* definition.c in Sources */ = {isa = PBXBuildFile; fileRef = 26532C251A86FF4800053103 /* definition.c */; };
@@ -30,8 +29,6 @@
 		26793BF41A86ED7C005E46B6 /* libtsutil.5.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libtsutil.5.dylib; path = ../../../../../../opt/ats/lib/libtsutil.5.dylib; sourceTree = "<group>"; };
 		26793BF81A86EDA8005E46B6 /* libfdproto.1.2.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libfdproto.1.2.0.dylib; path = ../../../../../../opt/fd/lib/libfdproto.1.2.0.dylib; sourceTree = "<group>"; };
 		26793BF91A86EDA8005E46B6 /* libfdcore.1.2.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libfdcore.1.2.0.dylib; path = ../../../../../../opt/fd/lib/libfdcore.1.2.0.dylib; sourceTree = "<group>"; };
-		26793BFE1A86F1AD005E46B6 /* ta_cli_dummy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ta_cli_dummy.c; sourceTree = "<group>"; };
-		26793BFF1A86F1AD005E46B6 /* ta_serv_dummy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ta_serv_dummy.c; sourceTree = "<group>"; };
 		268EDDFF1A8AB77D00AC6D41 /* fd1.conf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = fd1.conf; sourceTree = "<group>"; };
 		268EDE001A8AB84B00AC6D41 /* id1.privkey.pem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = id1.privkey.pem; sourceTree = "<group>"; };
 		268EDE011A8AB84B00AC6D41 /* id2.privkey.pem */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = id2.privkey.pem; sourceTree = "<group>"; };
@@ -47,16 +44,13 @@
 		26B31AD31A83EAFE0065E119 /* uthash.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = uthash.h; sourceTree = "<group>"; };
 		26B31AD41A83EAFE0065E119 /* utlist.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utlist.h; sourceTree = "<group>"; };
 		26B31AD51A83EAFE0065E119 /* utstring.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utstring.h; sourceTree = "<group>"; };
-		26B31AD71A83EAFE0065E119 /* dc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = dc.c; sourceTree = "<group>"; };
+		26B31AD71A83EAFE0065E119 /* trconfig.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = trconfig.c; sourceTree = "<group>"; };
 		26B31AD91A83EAFE0065E119 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
 		26B31ADA1A83EAFE0065E119 /* ta_cli.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ta_cli.c; sourceTree = "<group>"; };
 		26B31ADC1A83EAFE0065E119 /* ta_dict.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ta_dict.c; sourceTree = "<group>"; };
-		26B31ADE1A83EAFE0065E119 /* test_app.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = test_app.c; sourceTree = "<group>"; };
 		26B31AE01A83EAFE0065E119 /* trplugin.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = trplugin.c; sourceTree = "<group>"; };
 		26D68F381A94E38800BF5851 /* fdjdc.conf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = fdjdc.conf; sourceTree = "<group>"; };
-		26D68F3A1A98E6DA00BF5851 /* testuthash.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = testuthash.c; path = src/testuthash.c; sourceTree = "<group>"; };
 		26D68F441A9A136000BF5851 /* timeout_thread.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = timeout_thread.c; sourceTree = "<group>"; };
-		26F7AF0B1A8642B10070EAAE /* ta_serv.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ta_serv.c; sourceTree = "<group>"; };
 		26F7AF0D1A8653180070EAAE /* trplugin.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = trplugin.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -79,7 +73,6 @@
 		266710F21A7C113C00A140E9 = {
 			isa = PBXGroup;
 			children = (
-				26D68F391A98E6B700BF5851 /* test */,
 				268EDDFE1A8AB77D00AC6D41 /* conf */,
 				26793BF81A86EDA8005E46B6 /* libfdproto.1.2.0.dylib */,
 				26793BF91A86EDA8005E46B6 /* libfdcore.1.2.0.dylib */,
@@ -133,13 +126,9 @@
 			isa = PBXGroup;
 			children = (
 				268EDE081A8FB4CD00AC6D41 /* Makefile.apple */,
-				26793BFE1A86F1AD005E46B6 /* ta_cli_dummy.c */,
-				26793BFF1A86F1AD005E46B6 /* ta_serv_dummy.c */,
-				26F7AF0B1A8642B10070EAAE /* ta_serv.c */,
-				26B31AD71A83EAFE0065E119 /* dc.c */,
+				26B31AD71A83EAFE0065E119 /* trconfig.c */,
 				26B31AD91A83EAFE0065E119 /* Makefile */,
 				26B31ADC1A83EAFE0065E119 /* ta_dict.c */,
-				26B31ADE1A83EAFE0065E119 /* test_app.c */,
 				26B31ADA1A83EAFE0065E119 /* ta_cli.c */,
 				26B31AE01A83EAFE0065E119 /* trplugin.c */,
 				26532C251A86FF4800053103 /* definition.c */,
@@ -147,14 +136,6 @@
 				26D68F441A9A136000BF5851 /* timeout_thread.c */,
 			);
 			path = src;
-			sourceTree = "<group>";
-		};
-		26D68F391A98E6B700BF5851 /* test */ = {
-			isa = PBXGroup;
-			children = (
-				26D68F3A1A98E6DA00BF5851 /* testuthash.c */,
-			);
-			name = test;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -229,9 +210,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				26D68F3D1A990F9D00BF5851 /* dc.c in Sources */,
+				26D68F3D1A990F9D00BF5851 /* trconfig.c in Sources */,
 				26D68F3E1A990F9D00BF5851 /* ta_dict.c in Sources */,
-				26D68F3F1A990F9D00BF5851 /* test_app.c in Sources */,
 				26D68F401A990F9D00BF5851 /* ta_cli.c in Sources */,
 				26D68F411A990F9D00BF5851 /* trplugin.c in Sources */,
 				26D68F421A990F9D00BF5851 /* definition.c in Sources */,
@@ -337,19 +317,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = YES;
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					/opt/ats/include,
-					/opt/fd/include,
-					/opt/local/include,
-					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
-				);
-				"HEADER_SEARCH_PATHS[arch=*]" = (
-					"$(inherited)",
-					/opt/ats/include,
-					/opt/fd/include,
-					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
-				);
+				HEADER_SEARCH_PATHS = "";
+				"HEADER_SEARCH_PATHS[arch=*]" = "";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					/opt/ats/lib,
@@ -371,7 +340,7 @@
 					suppress,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				USER_HEADER_SEARCH_PATHS = "/opt/ats/include /opt/fd/include";
+				USER_HEADER_SEARCH_PATHS = "/opt/ats/include /opt/fd/include /opt/local/include";
 			};
 			name = Debug;
 		};
@@ -379,13 +348,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = YES;
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					/opt/ats/include,
-					/opt/fd/include,
-					/opt/local/include,
-					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
-				);
+				HEADER_SEARCH_PATHS = "";
 				"HEADER_SEARCH_PATHS[arch=*]" = (
 					"$(inherited)",
 					/opt/ats/include,
@@ -413,7 +376,7 @@
 					suppress,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				USER_HEADER_SEARCH_PATHS = "/opt/ats/include /opt/fd/include";
+				USER_HEADER_SEARCH_PATHS = "/opt/ats/include /opt/fd/include /opt/local/include";
 			};
 			name = Release;
 		};

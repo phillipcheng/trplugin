@@ -23,6 +23,7 @@ UserSession* user_session_alloc(char* userid, char* tenantId){
     us->errorUsed=0;
     us->pending_d_req=0;
     us->lastUpdateTime=time(NULL);
+    pthread_mutex_init(&us->us_lock, NULL);
     return us;
 }
 
@@ -50,6 +51,7 @@ void user_session_free(UserSession *us){
         if (us->sid!=NULL){
             free(us->sid);
         }
+        pthread_mutex_destroy(&us->us_lock);
         free(us);
     }
 }

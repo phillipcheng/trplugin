@@ -1,4 +1,4 @@
-#include "dc.h"
+#include "trplugin.h"
 
 struct dict_object * ta_vendor = NULL;
 struct dict_object * ta_appli = NULL;
@@ -29,7 +29,7 @@ int ta_dict_init(void)
     /* Create the Test Vendor */
     {
         struct dict_vendor_data data;
-        data.vendor_id = ta_conf->vendor_id;
+        data.vendor_id = tr_conf->diameterVendorId;
         data.vendor_name = "app_test vendor";
         CHECK_FCT(fd_dict_new( fd_g_config->cnf_dict, DICT_VENDOR, &data, NULL, &ta_vendor));
     }
@@ -37,7 +37,7 @@ int ta_dict_init(void)
     /* Create the Test Application */
     {
         struct dict_application_data data;
-        data.application_id = ta_conf->appli_id;
+        data.application_id = tr_conf->diameterAppId;
         data.application_name = "app_test application";
         CHECK_FCT(fd_dict_new( fd_g_config->cnf_dict, DICT_APPLICATION, &data, ta_vendor, &ta_appli));
     }
@@ -45,7 +45,7 @@ int ta_dict_init(void)
     /* Create the Test-Request & Test-Answer commands */
     {
         struct dict_cmd_data data;
-        data.cmd_code = ta_conf->cmd_id;
+        data.cmd_code = tr_conf->diameterCmdId;
         data.cmd_name = "Test-Request";
         data.cmd_flag_mask = CMD_FLAG_PROXIABLE | CMD_FLAG_REQUEST;
         data.cmd_flag_val  = CMD_FLAG_PROXIABLE | CMD_FLAG_REQUEST;
@@ -59,7 +59,7 @@ int ta_dict_init(void)
     {
         struct dict_avp_data data;
         data.avp_code = 400000;
-        data.avp_vendor = ta_conf->vendor_id;
+        data.avp_vendor = tr_conf->diameterVendorId;
         data.avp_name = "OpType-AVP";
         data.avp_flag_mask = AVP_FLAG_VENDOR;
         data.avp_flag_val = AVP_FLAG_VENDOR;
@@ -70,7 +70,7 @@ int ta_dict_init(void)
     {
         struct dict_avp_data data;
         data.avp_code = 400001;
-        data.avp_vendor = ta_conf->vendor_id;
+        data.avp_vendor = tr_conf->diameterVendorId;
         data.avp_name = "UserId-AVP";
         data.avp_flag_mask = AVP_FLAG_VENDOR;
         data.avp_flag_val = AVP_FLAG_VENDOR;
@@ -81,7 +81,7 @@ int ta_dict_init(void)
     {
         struct dict_avp_data data;
         data.avp_code = 400002;
-        data.avp_vendor = ta_conf->vendor_id;
+        data.avp_vendor = tr_conf->diameterVendorId;
         data.avp_name = "requestQuota-AVP";
         data.avp_flag_mask = AVP_FLAG_VENDOR;
         data.avp_flag_val = AVP_FLAG_VENDOR;
@@ -92,7 +92,7 @@ int ta_dict_init(void)
     {
         struct dict_avp_data data;
         data.avp_code = 400003;
-        data.avp_vendor = ta_conf->vendor_id;
+        data.avp_vendor = tr_conf->diameterVendorId;
         data.avp_name = "usedQuota-AVP";
         data.avp_flag_mask = AVP_FLAG_VENDOR;
         data.avp_flag_val = AVP_FLAG_VENDOR;
@@ -103,7 +103,7 @@ int ta_dict_init(void)
     {
         struct dict_avp_data data;
         data.avp_code = 400004;
-        data.avp_vendor = ta_conf->vendor_id;
+        data.avp_vendor = tr_conf->diameterVendorId;
         data.avp_name = "grantedQuota-AVP";
         data.avp_flag_mask = AVP_FLAG_VENDOR;
         data.avp_flag_val = AVP_FLAG_VENDOR;
@@ -114,7 +114,7 @@ int ta_dict_init(void)
     {
         struct dict_avp_data data;
         data.avp_code = 400005;
-        data.avp_vendor = ta_conf->vendor_id;
+        data.avp_vendor = tr_conf->diameterVendorId;
         data.avp_name = "TenantId-AVP";
         data.avp_flag_mask = AVP_FLAG_VENDOR;
         data.avp_flag_val = AVP_FLAG_VENDOR;

@@ -21,6 +21,19 @@ extern const int FLAG_AUTH_FAILED;
 extern const int FLAG_NORMAL;
 typedef enum {u_start=1, u_use=2, u_stop=3} u_req_type;
 
+typedef struct {
+    unsigned int diameterVendorId;//
+    unsigned int diameterAppId;//
+    unsigned int diameterCmdId;//
+    char* diameterDestRealm;
+    char* diameterDestHost;
+    unsigned long minRequestQuota;//bytes
+    unsigned long usTimeout; //seconds
+    unsigned int usTimeoutCheckInterval;//seconds
+}TrConfig;
+
+extern TrConfig* tr_conf;
+
 //context data for txn (req, rsp), put in the continuation for http response processor to get
 typedef struct {
     int flag; //indicate whether the authentication succeed or not

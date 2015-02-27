@@ -8,18 +8,15 @@
 
 #include "trplugin.h"
 
-const long us_timeout = 3*30; //seconds
-const long us_timeout_check_interval=30;//seconds
-
 void* checkSessionTimeout(void* ptr){
     time_t now;
     while(true){
-        sleep(us_timeout_check_interval);
+        sleep(tr_conf->usTimeoutCheckInterval);
         now = time(NULL);
         UserSessionDL* elt, *tmp;
         DL_FOREACH_SAFE(user_session_dlinkedlist, elt, tmp) {
             if (elt!=NULL){
-                if (elt->us->lastUpdateTime < now - us_timeout){
+                if (elt->us->lastUpdateTime < now - tr_conf->usTimeout){
                     TSDebug(DEBUG_NAME, "Session timed out for user session: %s\n", elt->us->sid);
                     delete_user_session(elt->us->sid);
                 }else{

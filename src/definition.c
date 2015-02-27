@@ -42,26 +42,10 @@ const int FLAG_AUTH_FAILED=1;//set the rsp_header_reason
 const int FLAG_AUTH_SUCC=2;
 const int FLAG_NORMAL=3;
 
-const unsigned long MIN_REQUEST_QUOTA = 1*1024*1024;
-const unsigned long DUMMY_INIT_QUOTA = 3*1024*1024;
-
 const unsigned int DIAMETER_SUCCESS = 2001;
 const unsigned int DIAMETER_UNKNOWN_SESSION_ID= 5002;//for update and stop
 const unsigned int DIAMETER_AUTHORIZATION_REJECTED= 5003; //maps to user not found for start
 
 struct session_handler * ta_cli_reg = NULL;
-
-//for the simulated server side usage session
-UsageServerSession * usageserver_session_alloc(){
-    UsageServerSession* s = malloc(sizeof(UsageServerSession));
-    s->leftQuota=0;
-    return s;
-}
-void usageserver_session_free(UsageServerSession *data){
-    if (data->sid!=NULL){
-        free(data->sid);
-    }
-    free(data);
-}
 
 

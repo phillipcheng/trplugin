@@ -3,12 +3,67 @@
 //  trplugin
 //
 
-#include "dc.h"
+#include "trplugin.h"
+
+TrConfig g_trconfig;
+TrConfig* tr_conf;
 
 /* forward declarations */
 static int main_cmdline(int argc, char *argv[]);
 
 static char *conffile = NULL;
+
+static int tr_conf_init(void)
+{
+    tr_conf = &g_trconfig;
+    memset(tr_conf, 0, sizeof(TrConfig));
+    
+    /* Set the default values */
+    tr_conf->diameterVendorId  = 999999;		/* Dummy value */
+    tr_conf->diameterAppId   = 0xffffff;	/* dummy value */
+    tr_conf->diameterCmdId     = 0xfffffe;	/* Experimental */
+    tr_conf->diameterDestRealm = strdup(fd_g_config->cnf_diamrlm);
+    tr_conf->diameterDestHost  = NULL;
+    tr_conf->minRequestQuota = 1*1024*1024;
+    tr_conf->usTimeout = 3*60;
+    tr_conf->usTimeoutCheckInterval=60;
+    
+    return 0;
+}
+
+static void tr_conf_dump(void)
+{
+    if (!TRACE_BOOL(INFO))
+        return;
+    fd_log_debug( "------- app_test configuration dump: ---------");
+    fd_log_debug( " Vendor Id .......... : %u", tr_conf->diameterVendorId);
+    fd_log_debug( " Application Id ..... : %u", tr_conf->diameterAppId);
+    fd_log_debug( " Command Id ......... : %u", tr_conf->diameterCmdId);
+    fd_log_debug( " Destination Realm .. : %s", tr_conf->diameterDestRealm ?: "- none -");
+    fd_log_debug( " Destination Host ... : %s", tr_conf->diameterDestHost ?: "- none -");
+    fd_log_debug( "------- /app_test configuration dump ---------");
+}
+
+
+/* entry point */
+int ta_entry(char * conffile)
+{
+    tr_conf_init();
+    
+    TRACE_DEBUG(INFO, "Extension Test_App initialized with configuration: '%s'", conffile);
+    tr_conf_dump();
+    
+    /* Install objects definitions for this test application */
+    CHECK_FCT( ta_dict_init() );
+    
+    
+    CHECK_FCT( ta_cli_init() );
+    
+    /* Advertise the support for the test application in the peer */
+    CHECK_FCT( fd_disp_app_support ( ta_appli, ta_vendor, 1, 0 ) );
+    
+    return 0;
+}
 
 int dcinit(int argc, char * argv[])
 {
