@@ -30,9 +30,7 @@ static int ta_conf_init(void)
 	ta_conf->vendor_id  = 999999;		/* Dummy value */
 	ta_conf->appli_id   = 0xffffff;	/* dummy value */
 	ta_conf->cmd_id     = 0xfffffe;	/* Experimental */
-	ta_conf->avp_id     = 0xffffff;	/* dummy value */
     ta_conf->mode = DC_CLIENT;
-	ta_conf->long_avp_len = 5000;
 	ta_conf->dest_realm = strdup(fd_g_config->cnf_diamrlm);
 	ta_conf->dest_host  = NULL;
 	
@@ -50,9 +48,6 @@ static void ta_conf_dump(void)
 	fd_log_debug( " Vendor Id .......... : %u", ta_conf->vendor_id);
 	fd_log_debug( " Application Id ..... : %u", ta_conf->appli_id);
 	fd_log_debug( " Command Id ......... : %u", ta_conf->cmd_id);
-	fd_log_debug( " AVP Id ............. : %u", ta_conf->avp_id);
-	fd_log_debug( " Long AVP Id ........ : %u", ta_conf->long_avp_id);
-	fd_log_debug( " Long AVP len ....... : %zu", ta_conf->long_avp_len);
 	fd_log_debug( " Destination Realm .. : %s", ta_conf->dest_realm ?: "- none -");
 	fd_log_debug( " Destination Host ... : %s", ta_conf->dest_host ?: "- none -");
 	fd_log_debug( "------- /app_test configuration dump ---------");
@@ -62,9 +57,7 @@ static void ta_conf_dump(void)
 /* entry point */
 int ta_entry(char * conffile)
 {
-	
-	/* Initialize configuration */
-	CHECK_FCT( ta_conf_init() );
+    ta_conf_init();
 	
 	/* Parse configuration file */
 	if (conffile != NULL) {

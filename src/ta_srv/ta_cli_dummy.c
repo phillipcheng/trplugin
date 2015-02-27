@@ -1,16 +1,19 @@
+
 /* dummy
  */
 
-#include "dc.h"
+#include "trplugin.h"
+#include <stdio.h>
 
-int ta_serv_init(void)
+
+int ta_cli_init(void)
 {
     fprintf(stderr, "Never call me, I am dummy");
 	return 0;
 }
 
-void ta_serv_fini(void)
+void ta_cli_fini(void)
 {
     fprintf(stderr, "Never call me, I am dummy");
 	return;
-}
+};
