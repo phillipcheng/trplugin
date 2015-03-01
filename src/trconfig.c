@@ -1,9 +1,9 @@
 //
-//  dc.c
-//  trplugin
+//  trconfig.c
 //
 
 #include "trplugin.h"
+#include "confuse.h"
 
 TrConfig g_trconfig;
 TrConfig* tr_conf;
@@ -11,7 +11,8 @@ TrConfig* tr_conf;
 /* forward declarations */
 static int main_cmdline(int argc, char *argv[]);
 
-static char *conffile = NULL;
+static char *dc_conffile = NULL;
+static char *tr_conffile = NULL;
 
 static int tr_conf_init(void)
 {
@@ -28,34 +29,58 @@ static int tr_conf_init(void)
     tr_conf->usTimeout = 3*60;
     tr_conf->usTimeoutCheckInterval=60;
     
+    //read configuration from dc_conffile
+    if (dc_conffile!=NULL){
+        cfg_opt_t opts[] ={
+            CFG_INT("diameterVendorId", 999999, CFGF_NONE),
+            CFG_INT("diameterAppId", 16777215, CFGF_NONE),
+            CFG_INT("diameterCmdId", 16777214, CFGF_NONE),
+            CFG_INT("minRequestQuota", 1048576, CFGF_NONE),
+            CFG_INT("usTimeout", 180, CFGF_NONE),
+            CFG_INT("usTimeoutCheckInterval", 60, CFGF_NONE),
+            CFG_END()
+        };
+        cfg_t *cfg;
+        cfg = cfg_init(opts, CFGF_NONE);
+        if(cfg_parse(cfg, tr_conffile) == CFG_PARSE_ERROR)
+            return 1;
+        tr_conf->diameterVendorId = (unsigned int)cfg_getint(cfg, "diameterVendorId");
+        tr_conf->diameterAppId = (unsigned int)cfg_getint(cfg, "diameterAppId");
+        tr_conf->diameterCmdId = (unsigned int)cfg_getint(cfg, "diameterCmdId");
+        tr_conf->minRequestQuota = cfg_getint(cfg, "minRequestQuota");
+        tr_conf->usTimeout = cfg_getint(cfg, "usTimeout");
+        tr_conf->usTimeoutCheckInterval = (unsigned int)cfg_getint(cfg, "usTimeoutCheckInterval");
+        cfg_free(cfg);
+    }
+    
     return 0;
 }
 
 static void tr_conf_dump(void)
 {
-    if (!TRACE_BOOL(INFO))
-        return;
-    fd_log_debug( "------- app_test configuration dump: ---------");
-    fd_log_debug( " Vendor Id .......... : %u", tr_conf->diameterVendorId);
-    fd_log_debug( " Application Id ..... : %u", tr_conf->diameterAppId);
-    fd_log_debug( " Command Id ......... : %u", tr_conf->diameterCmdId);
-    fd_log_debug( " Destination Realm .. : %s", tr_conf->diameterDestRealm ?: "- none -");
-    fd_log_debug( " Destination Host ... : %s", tr_conf->diameterDestHost ?: "- none -");
-    fd_log_debug( "------- /app_test configuration dump ---------");
+    TRACE_DEBUG( INFO, "------- tr configuration dump: ---------");
+    TRACE_DEBUG( INFO, " Vendor Id .......... : %u", tr_conf->diameterVendorId);
+    TRACE_DEBUG( INFO, " Application Id ..... : %u", tr_conf->diameterAppId);
+    TRACE_DEBUG( INFO, " Command Id ......... : %u", tr_conf->diameterCmdId);
+    TRACE_DEBUG( INFO, " Destination Realm .. : %s", tr_conf->diameterDestRealm ?: "- none -");
+    TRACE_DEBUG( INFO, " Destination Host ... : %s", tr_conf->diameterDestHost ?: "- none -");
+    TRACE_DEBUG( INFO, " minRequestQuota .. : %lu", tr_conf->minRequestQuota);
+    TRACE_DEBUG( INFO, " minRequestQuota ... : %lu", tr_conf->minRequestQuota);
+	TRACE_DEBUG( INFO, " usTimeoutCheckInterval ... : %d", tr_conf->usTimeoutCheckInterval);
+	TRACE_DEBUG( INFO, " usTimeout ... : %lu", tr_conf->usTimeout);
+    TRACE_DEBUG( INFO, "------- /tr configuration dump ---------");
 }
 
 
 /* entry point */
-int ta_entry(char * conffile)
+int ta_entry()
 {
     tr_conf_init();
     
-    TRACE_DEBUG(INFO, "Extension Test_App initialized with configuration: '%s'", conffile);
     tr_conf_dump();
     
     /* Install objects definitions for this test application */
     CHECK_FCT( ta_dict_init() );
-    
     
     CHECK_FCT( ta_cli_init() );
     
@@ -67,8 +92,6 @@ int ta_entry(char * conffile)
 
 int dcinit(int argc, char * argv[])
 {
-    fprintf(stderr, "in dcinit.");
-    
     int ret;
     
     /* Parse the command-line */
@@ -86,10 +109,10 @@ int dcinit(int argc, char * argv[])
     }
     
     /* Parse the configuration file */
-    CHECK_FCT_DO( fd_core_parseconf(conffile), goto error );
+    CHECK_FCT_DO( fd_core_parseconf(dc_conffile), goto error );
     
     //here I can manually load my plugin
-    ta_entry(NULL);
+    ta_entry();
     
     /* Start the servers */
     CHECK_FCT_DO( fd_core_start(), goto error );
@@ -120,7 +143,8 @@ static void main_help( void )
     printf("\nUsage:  " FD_PROJECT_BINARY " [OPTIONS]...\n");
     printf( "  -h, --help             Print help and exit\n"
            "  -V, --version          Print version and exit\n"
-           "  -c, --config=filename  Read configuration from this file instead of the \n"
+           "  -c, --dcconfig=filename  Read diameter configuration from this file instead of the \n"
+           "  -a, --trconfig=filename Read tr configuration from this file\n"
            "                           default location (" DEFAULT_CONF_PATH "/" FD_DEFAULT_CONF_FILENAME ").\n");
     printf( "\nDebug:\n"
            "  These options are mostly useful for developers\n"
@@ -143,7 +167,8 @@ static int main_cmdline(int argc, char *argv[])
     struct option long_options[] = {
         { "help",	no_argument, 		NULL, 'h' },
         { "version",	no_argument, 		NULL, 'V' },
-        { "config",	required_argument, 	NULL, 'c' },
+        { "dcconfig",	required_argument, 	NULL, 'c' },
+        { "trconfig",	required_argument, 	NULL, 'a' },
         { "debug",	no_argument, 		NULL, 'd' },
         { "quiet",	no_argument, 		NULL, 'q' },
         { "dbglocale",	optional_argument, 	NULL, 'l' },
@@ -155,7 +180,7 @@ static int main_cmdline(int argc, char *argv[])
     
     /* Loop on arguments */
     while (1) {
-        c = getopt_long (argc, argv, "hF:f:c:dql:M:", long_options, &option_index);
+        c = getopt_long (argc, argv, "hF:f:c:dql:M:a:", long_options, &option_index);
         if (c == -1)
             break;	/* Exit from the loop.  */
         
@@ -164,14 +189,20 @@ static int main_cmdline(int argc, char *argv[])
                 main_help();
                 exit(0);
                 
-            case 'c':	/* Read configuration from this file instead of the default location..  */
+            case 'c':	/* Read diameter configuration from this file instead of the default location..  */
                 if (optarg == NULL ) {
-                    fprintf(stderr, "Missing argument with --config directive\n");
+                    fprintf(stderr, "Missing argument with --dcconfig directive\n");
                     return EINVAL;
                 }
-                conffile = optarg;
+                dc_conffile = optarg;
                 break;
-                
+            case 'a':
+                if (optarg == NULL ) {
+                    fprintf(stderr, "Missing argument with --trconfig directive\n");
+                    return EINVAL;
+                }
+                tr_conffile = optarg;
+                break;
             case 'l':	/* Change the locale.  */
                 locale = setlocale(LC_ALL, optarg?:"");
                 if (!locale) {

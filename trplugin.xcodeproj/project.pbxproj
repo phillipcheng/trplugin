@@ -22,6 +22,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		26206BF11AA0C05600DB2E34 /* plugin.config */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = plugin.config; sourceTree = "<group>"; };
+		26206BF21AA0C05600DB2E34 /* tr.conf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = tr.conf; sourceTree = "<group>"; };
 		26532C251A86FF4800053103 /* definition.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = definition.c; sourceTree = "<group>"; };
 		266710FB1A7C113C00A140E9 /* trplugin */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = trplugin; sourceTree = BUILT_PRODUCTS_DIR; };
 		26793BF21A86ED7C005E46B6 /* libtsconfig.5.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libtsconfig.5.dylib; path = ../../../../../../opt/ats/lib/libtsconfig.5.dylib; sourceTree = "<group>"; };
@@ -96,6 +98,8 @@
 		268EDDFE1A8AB77D00AC6D41 /* conf */ = {
 			isa = PBXGroup;
 			children = (
+				26206BF11AA0C05600DB2E34 /* plugin.config */,
+				26206BF21AA0C05600DB2E34 /* tr.conf */,
 				26D68F381A94E38800BF5851 /* fdjdc.conf */,
 				268EDE061A8AB8E600AC6D41 /* fd2.conf */,
 				268EDE001A8AB84B00AC6D41 /* id1.privkey.pem */,
@@ -325,8 +329,7 @@
 					/opt/fd/lib,
 				);
 				"LIBRARY_SEARCH_PATHS[arch=*]" = "$(inherited)";
-				OTHER_LDFLAGS = "";
-				"OTHER_LDFLAGS[arch=*]" = (
+				OTHER_LDFLAGS = (
 					"-g",
 					"-L/opt/ats/lib",
 					"-L/opt/fd/lib",
@@ -339,8 +342,23 @@
 					"-undefined",
 					suppress,
 				);
+				"OTHER_LDFLAGS[arch=*]" = (
+					"-g",
+					"-L/opt/ats/lib",
+					"-L/opt/fd/lib",
+					"-L/usr/local/lib",
+					"-lconfuse",
+					"-ltsconfig",
+					"-ltsmgmt",
+					"-ltsutil",
+					"-lfdcore",
+					"-lfdproto",
+					"-flat_namespace",
+					"-undefined",
+					suppress,
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				USER_HEADER_SEARCH_PATHS = "/opt/ats/include /opt/fd/include /opt/local/include";
+				USER_HEADER_SEARCH_PATHS = "/opt/ats/include /opt/fd/include /opt/local/include /usr/local/include";
 			};
 			name = Debug;
 		};
@@ -366,6 +384,8 @@
 					"-g",
 					"-L/opt/ats/lib",
 					"-L/opt/fd/lib",
+					"-L/usr/local/lib",
+					"-lconfuse",
 					"-ltsconfig",
 					"-ltsmgmt",
 					"-ltsutil",
@@ -376,7 +396,7 @@
 					suppress,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				USER_HEADER_SEARCH_PATHS = "/opt/ats/include /opt/fd/include /opt/local/include";
+				USER_HEADER_SEARCH_PATHS = "/opt/ats/include /opt/fd/include /opt/local/include /usr/local/include";
 			};
 			name = Release;
 		};
