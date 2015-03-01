@@ -213,23 +213,25 @@ void postprocess_any_request(TSHttpTxn txnp, TSCont contp){
     if (txnData->reqType==u_start && txnData->flag==FLAG_AUTH_FAILED){
         //failed in start-authentication
     }else{
-        UserSession* us = find_user_session(txnData->sessionid);
-        if (us!=NULL){
-            pthread_mutex_lock(&us->us_lock);
-            if (us->dserver_error){
-                us->errorUsed+=len;
-                TSDebug(DEBUG_NAME, "postprocess any request, session id:%s, usage this time:%ld, errorUsed:%llu",
-                        txnData->sessionid, len, us->errorUsed);
-            }else{
-                us->leftQuota-=len;
-                TSDebug(DEBUG_NAME, "postprocess any request, session id:%s, usage this time:%ld, leftQuota:%lld",
-                        txnData->sessionid, len, us->leftQuota);
-            }
-            pthread_mutex_unlock(&us->us_lock);
-        }else{
-            TSDebug(DEBUG_NAME, "postprocess any request, session not found for %s",
-                    txnData->sessionid);
-        }
+		if (txnData->sessionid!=NULL){
+			UserSession* us = find_user_session(txnData->sessionid);
+			if (us!=NULL){
+				pthread_mutex_lock(&us->us_lock);
+				if (us->dserver_error){
+					us->errorUsed+=len;
+					TSDebug(DEBUG_NAME, "postprocess any request, session id:%s, usage this time:%ld, errorUsed:%llu",
+							txnData->sessionid, len, us->errorUsed);
+				}else{
+					us->leftQuota-=len;
+					TSDebug(DEBUG_NAME, "postprocess any request, session id:%s, usage this time:%ld, leftQuota:%lld",
+							txnData->sessionid, len, us->leftQuota);
+				}
+				pthread_mutex_unlock(&us->us_lock);
+			}else{
+				TSDebug(DEBUG_NAME, "postprocess any request, session not found for %s",
+						txnData->sessionid);
+			}
+		}
     }
 }
 
