@@ -259,6 +259,7 @@ void update_session(TSHttpTxn txnp, TSCont contp, long len, bool req){
             }else{
                 us->errorUsed+=len;
             }
+			update_user_session(us);
             pthread_mutex_unlock(&us->us_lock);
             if (req){
                 http_req_continue_cb(txnp, contp);
