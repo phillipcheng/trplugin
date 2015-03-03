@@ -41,16 +41,35 @@ char* getHeaderStringAttr(TSMBuffer bufp, TSMLoc hdr_loc, const char* name, int 
     }
 }
 
-char* getClientIp(TSHttpTxn txnp){
+char* getIncomingIpStr(TSHttpTxn txnp){
     struct sockaddr const* incoming_addr = TSHttpTxnIncomingAddrGet(txnp);
-    char* incoming_str = malloc(INET6_ADDRSTRLEN);
-    const char* ptr = inet_ntop(incoming_addr->sa_family, incoming_addr, incoming_str, INET6_ADDRSTRLEN);
+    char* incoming_addr_str = malloc(INET6_ADDRSTRLEN);
+    const char* ptr = inet_ntop(incoming_addr->sa_family, incoming_addr, incoming_addr_str, INET6_ADDRSTRLEN);
     if (ptr!=NULL){
-        TSDebug(DEBUG_NAME, "src ip: after inet_ntop: %s", incoming_str);
+        TSDebug(DEBUG_NAME, "incomingAddr: %s", incoming_addr_str);
     }else{
-        TSDebug(DEBUG_NAME, "failed: src ip: after inet_ntop: %s, with reason %s", incoming_str, strerror(errno));
+        TSDebug(DEBUG_NAME, "failed: incomingAddr ip: after inet_ntop: %s, with reason %s", incoming_addr_str, strerror(errno));
     }
-    return incoming_str;
+	/*
+	struct sockaddr const* client_addr = TSHttpTxnClientAddrGet(txnp);
+	char* client_addr_str = malloc(INET6_ADDRSTRLEN);
+	ptr = inet_ntop(client_addr->sa_family, client_addr, client_addr_str, INET6_ADDRSTRLEN);
+	if (ptr!=NULL){
+		TSDebug(DEBUG_NAME, "clientAddr: %s", client_addr_str);
+	}else{
+		TSDebug(DEBUG_NAME, "failed: clientAddr ip: after inet_ntop: %s, with reason %s", client_addr_str, strerror(errno));
+	}
+	
+	struct sockaddr const* server_addr = TSHttpTxnServerAddrGet(txnp);
+	char* server_addr_str = malloc(INET6_ADDRSTRLEN);
+	ptr = inet_ntop(server_addr->sa_family, server_addr, server_addr_str, INET6_ADDRSTRLEN);
+	if (ptr!=NULL){
+		TSDebug(DEBUG_NAME, "serverAddr: %s", server_addr_str);
+	}else{
+		TSDebug(DEBUG_NAME, "failed: serverAddr ip: after inet_ntop: %s, with reason %s", server_addr_str, strerror(errno));
+	}*/
+	
+    return incoming_addr_str;
 }
 
 void setHeaderIntAttr(TSMBuffer bufp, TSMLoc hdr_loc, const char* name, int val){
@@ -205,36 +224,6 @@ void update_session_cb(DiamTxnData* dtxn_data){
     dtxn_free(dtxn_data);
 }
 
-void postprocess_any_request(TSHttpTxn txnp, TSCont contp){
-    long clientRspHdrBytes = TSHttpTxnClientRespHdrBytesGet(txnp);
-    long clientRspBdyBytes = TSHttpTxnClientRespBodyBytesGet(txnp);
-    long len = clientRspHdrBytes+clientRspBdyBytes;
-    HttpTxnData* txnData = TSContDataGet(contp);
-    if (txnData->reqType==u_start && txnData->flag==FLAG_AUTH_FAILED){
-        //failed in start-authentication
-    }else{
-		if (txnData->sessionid!=NULL){
-			UserSession* us = find_user_session(txnData->sessionid);
-			if (us!=NULL){
-				pthread_mutex_lock(&us->us_lock);
-				if (us->dserver_error){
-					us->errorUsed+=len;
-					TSDebug(DEBUG_NAME, "postprocess any request, session id:%s, usage this time:%ld, errorUsed:%llu",
-							txnData->sessionid, len, us->errorUsed);
-				}else{
-					us->leftQuota-=len;
-					TSDebug(DEBUG_NAME, "postprocess any request, session id:%s, usage this time:%ld, leftQuota:%lld",
-							txnData->sessionid, len, us->leftQuota);
-				}
-				pthread_mutex_unlock(&us->us_lock);
-			}else{
-				TSDebug(DEBUG_NAME, "postprocess any request, session not found for %s",
-						txnData->sessionid);
-			}
-		}
-    }
-}
-
 void update_session(TSHttpTxn txnp, TSCont contp, long len, bool req){
     HttpTxnData* txnData = TSContDataGet(contp);
     UserSession* us = find_user_session(txnData->sessionid);
@@ -292,12 +281,28 @@ void update_session(TSHttpTxn txnp, TSCont contp, long len, bool req){
     }
 }
 
+const char* FLAG_STR_SUCCESS="auth_success";
+const char* FLAG_STR_FAILED="auth_failed";
+const char* FLAG_STR_NORMAL="normal";
+
+const char* getFlagString(int flag){
+	if (flag==FLAG_AUTH_FAILED){
+		return FLAG_STR_FAILED;
+	}else if (flag==FLAG_AUTH_SUCC){
+		return FLAG_STR_SUCCESS;
+	}else {
+		return FLAG_STR_NORMAL;
+	}
+}
+
 static void handle_request(TSHttpTxn txnp, TSCont contp){
     uint32_t sesscnt=0;
     fd_sess_getcount(&sesscnt);
-    TSDebug(DEBUG_NAME, "%d sessions we have now ......\n", sesscnt);
-    
+    TSDebug(DEBUG_NAME, "%d diameter sessions we have now ......\n", sesscnt);
+	
     TSDebug(DEBUG_NAME, "handle_request called ......\n");
+	getIncomingIpStr(txnp);
+	
     TSMBuffer bufp=NULL;
     TSMLoc hdr_loc=NULL;
     HttpTxnData* httpTxnData = TSContDataGet(contp);
@@ -356,20 +361,8 @@ static void handle_request(TSHttpTxn txnp, TSCont contp){
     return;
 }
 
-const char* FLAG_STR_SUCCESS="auth_success";
-const char* FLAG_STR_FAILED="auth_failed";
-const char* FLAG_STR_NORMAL="normal";
-const char* getFlagString(int flag){
-    if (flag==FLAG_AUTH_FAILED){
-        return FLAG_STR_FAILED;
-    }else if (flag==FLAG_AUTH_SUCC){
-        return FLAG_STR_SUCCESS;
-    }else {
-        return FLAG_STR_NORMAL;
-    }
-}
-
 static void handle_response(TSHttpTxn txnp, TSCont contp) {
+	
     TSMBuffer bufp;
     TSMLoc hdr_loc;
     bool goon=true;
@@ -402,6 +395,37 @@ static void handle_response(TSHttpTxn txnp, TSCont contp) {
     if (goon){
         TSHttpTxnReenable(txnp, TS_EVENT_HTTP_CONTINUE);
     }
+}
+
+static void postprocess_any_request(TSHttpTxn txnp, TSCont contp){
+	
+	long clientRspHdrBytes = TSHttpTxnClientRespHdrBytesGet(txnp);
+	long clientRspBdyBytes = TSHttpTxnClientRespBodyBytesGet(txnp);
+	long len = clientRspHdrBytes+clientRspBdyBytes;
+	HttpTxnData* txnData = TSContDataGet(contp);
+	if (txnData->reqType==u_start && txnData->flag==FLAG_AUTH_FAILED){
+		//failed in start-authentication
+	}else{
+		if (txnData->sessionid!=NULL){
+			UserSession* us = find_user_session(txnData->sessionid);
+			if (us!=NULL){
+				pthread_mutex_lock(&us->us_lock);
+				if (us->dserver_error){
+					us->errorUsed+=len;
+					TSDebug(DEBUG_NAME, "postprocess any request, session id:%s, usage this time:%ld, errorUsed:%llu",
+							txnData->sessionid, len, us->errorUsed);
+				}else{
+					us->leftQuota-=len;
+					TSDebug(DEBUG_NAME, "postprocess any request, session id:%s, usage this time:%ld, leftQuota:%lld",
+							txnData->sessionid, len, us->leftQuota);
+				}
+				pthread_mutex_unlock(&us->us_lock);
+			}else{
+				TSDebug(DEBUG_NAME, "postprocess any request, session not found for %s",
+						txnData->sessionid);
+			}
+		}
+	}
 }
 
 static int tr_plugin(TSCont contp, TSEvent event, void *edata)
