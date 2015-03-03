@@ -50,7 +50,7 @@ char* getIncomingIpStr(TSHttpTxn txnp){
     }else{
         TSDebug(DEBUG_NAME, "failed: incomingAddr ip: after inet_ntop: %s, with reason %s", incoming_addr_str, strerror(errno));
     }
-	/*
+	
 	struct sockaddr const* client_addr = TSHttpTxnClientAddrGet(txnp);
 	char* client_addr_str = malloc(INET6_ADDRSTRLEN);
 	ptr = inet_ntop(client_addr->sa_family, client_addr, client_addr_str, INET6_ADDRSTRLEN);
@@ -67,7 +67,7 @@ char* getIncomingIpStr(TSHttpTxn txnp){
 		TSDebug(DEBUG_NAME, "serverAddr: %s", server_addr_str);
 	}else{
 		TSDebug(DEBUG_NAME, "failed: serverAddr ip: after inet_ntop: %s, with reason %s", server_addr_str, strerror(errno));
-	}*/
+	}
 	
     return incoming_addr_str;
 }
