@@ -43,33 +43,27 @@ char* getHeaderStringAttr(TSMBuffer bufp, TSMLoc hdr_loc, const char* name, int 
 
 char* getIncomingIpStr(TSHttpTxn txnp){
     struct sockaddr const* incoming_addr = TSHttpTxnIncomingAddrGet(txnp);
+	struct sockaddr_in *netaddr = (struct sockaddr_in*)incoming_addr;
+	
     char* incoming_addr_str = malloc(INET6_ADDRSTRLEN);
-    const char* ptr = inet_ntop(incoming_addr->sa_family, incoming_addr, incoming_addr_str, INET6_ADDRSTRLEN);
-    if (ptr!=NULL){
+    const char* ptr = inet_ntop(netaddr->sin_family, &netaddr->sin_addr, incoming_addr_str, INET6_ADDRSTRLEN);
+	if (ptr!=NULL){
         TSDebug(DEBUG_NAME, "incomingAddr: %s", incoming_addr_str);
     }else{
         TSDebug(DEBUG_NAME, "failed: incomingAddr ip: after inet_ntop: %s, with reason %s", incoming_addr_str, strerror(errno));
     }
 	
 	struct sockaddr const* client_addr = TSHttpTxnClientAddrGet(txnp);
+	netaddr = (struct sockaddr_in*)client_addr;
 	char* client_addr_str = malloc(INET6_ADDRSTRLEN);
-	ptr = inet_ntop(client_addr->sa_family, client_addr, client_addr_str, INET6_ADDRSTRLEN);
+	ptr = inet_ntop(netaddr->sin_family, &netaddr->sin_addr, client_addr_str, INET6_ADDRSTRLEN);
 	if (ptr!=NULL){
 		TSDebug(DEBUG_NAME, "clientAddr: %s", client_addr_str);
 	}else{
 		TSDebug(DEBUG_NAME, "failed: clientAddr ip: after inet_ntop: %s, with reason %s", client_addr_str, strerror(errno));
 	}
 	
-	struct sockaddr const* server_addr = TSHttpTxnServerAddrGet(txnp);
-	char* server_addr_str = malloc(INET6_ADDRSTRLEN);
-	ptr = inet_ntop(server_addr->sa_family, server_addr, server_addr_str, INET6_ADDRSTRLEN);
-	if (ptr!=NULL){
-		TSDebug(DEBUG_NAME, "serverAddr: %s", server_addr_str);
-	}else{
-		TSDebug(DEBUG_NAME, "failed: serverAddr ip: after inet_ntop: %s, with reason %s", server_addr_str, strerror(errno));
-	}
-	
-    return incoming_addr_str;
+    return NULL;
 }
 
 void setHeaderIntAttr(TSMBuffer bufp, TSMLoc hdr_loc, const char* name, int val){
