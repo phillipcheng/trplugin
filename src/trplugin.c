@@ -41,31 +41,6 @@ char* getHeaderStringAttr(TSMBuffer bufp, TSMLoc hdr_loc, const char* name, int 
     }
 }
 
-char* getIncomingIpStr(TSHttpTxn txnp){
-    struct sockaddr const* incoming_addr = TSHttpTxnIncomingAddrGet(txnp);
-	struct sockaddr_in *netaddr = (struct sockaddr_in*)incoming_addr;
-	
-    char* incoming_addr_str = malloc(INET6_ADDRSTRLEN);
-    const char* ptr = inet_ntop(netaddr->sin_family, &netaddr->sin_addr, incoming_addr_str, INET6_ADDRSTRLEN);
-	if (ptr!=NULL){
-        TSDebug(DEBUG_NAME, "incomingAddr: %s", incoming_addr_str);
-    }else{
-        TSDebug(DEBUG_NAME, "failed: incomingAddr ip: after inet_ntop: %s, with reason %s", incoming_addr_str, strerror(errno));
-    }
-	
-	struct sockaddr const* client_addr = TSHttpTxnClientAddrGet(txnp);
-	netaddr = (struct sockaddr_in*)client_addr;
-	char* client_addr_str = malloc(INET6_ADDRSTRLEN);
-	ptr = inet_ntop(netaddr->sin_family, &netaddr->sin_addr, client_addr_str, INET6_ADDRSTRLEN);
-	if (ptr!=NULL){
-		TSDebug(DEBUG_NAME, "clientAddr: %s", client_addr_str);
-	}else{
-		TSDebug(DEBUG_NAME, "failed: clientAddr ip: after inet_ntop: %s, with reason %s", client_addr_str, strerror(errno));
-	}
-	
-    return NULL;
-}
-
 void setHeaderIntAttr(TSMBuffer bufp, TSMLoc hdr_loc, const char* name, int val){
     //TSDebug(DEBUG_NAME, "set attribute:%s val:%s", name, val);
     TSMLoc field_loc;
@@ -110,7 +85,8 @@ void http_req_continue_cb(TSHttpTxn txnp, TSCont contp){
 
 void start_session_cb(DiamTxnData* dtdata){
     if (dtdata->flag==FLAG_AUTH_SUCC||dtdata->dserver_error){
-        UserSession* us = user_session_alloc(dtdata->userId, dtdata->tenantId);
+		HttpTxnData* txnp = TSContDataGet(dtdata->contp);
+        UserSession* us = user_session_alloc(txnp);
         us->d1sid =strdup(dtdata->d1sid);
         if (!dtdata->dserver_error){
             TSDebug(DEBUG_NAME, "start cmd: session created for user:%s and user-sid:%s and diameter1-sid:%s with quota %llu",
@@ -123,9 +99,6 @@ void start_session_cb(DiamTxnData* dtdata){
             us->dserver_error=true;
         }
         add_user_session(us);
-        //add session id to ctx data for rsp processor
-        HttpTxnData* ctx = TSContDataGet(dtdata->contp);
-        ctx->sessionid = strdup(us->sid);
         http_req_shortcut_cb(dtdata->txnp, dtdata->contp, FLAG_AUTH_SUCC, RSP_REASON_VAL_SUCCESS);
     }else{
         http_req_shortcut_cb(dtdata->txnp, dtdata->contp, dtdata->flag, dtdata->errid);
@@ -292,14 +265,13 @@ const char* getFlagString(int flag){
 static void handle_request(TSHttpTxn txnp, TSCont contp){
     uint32_t sesscnt=0;
     fd_sess_getcount(&sesscnt);
-    TSDebug(DEBUG_NAME, "%d diameter sessions we have now ......\n", sesscnt);
 	
-    TSDebug(DEBUG_NAME, "handle_request called ......\n");
-	getIncomingIpStr(txnp);
+    TSDebug(DEBUG_NAME, "handle_request called, %d diameter sessions ......\n", sesscnt);
 	
     TSMBuffer bufp=NULL;
     TSMLoc hdr_loc=NULL;
     HttpTxnData* httpTxnData = TSContDataGet(contp);
+	httpTxnData->clientip = getClientIpStr(txnp);
     if (TSHttpTxnClientReqGet(txnp, &bufp, &hdr_loc) != TS_SUCCESS) {
         TSError("fatal: couldn't retrieve client request header\n");
         http_req_shortcut_cb(txnp, contp, FLAG_AUTH_FAILED, RSP_REASON_VAL_NOREQHEAD);
@@ -310,7 +282,7 @@ static void handle_request(TSHttpTxn txnp, TSCont contp){
     if (cmdval==NULL){//this is normal request, interim
         httpTxnData->reqType = u_use;
         long l_req_len =TSHttpTxnClientReqHdrBytesGet(txnp)+TSHttpTxnClientReqBodyBytesGet(txnp);
-        httpTxnData->sessionid = getHeaderStringAttr(bufp, hdr_loc, HEADER_SESSIONID, HEADER_SESSIONID_LEN);
+		httpTxnData->sessionid = get_session_id(httpTxnData);
         if (httpTxnData->sessionid!=NULL){
             update_session(txnp, contp, l_req_len, true);
         }else{
@@ -323,7 +295,7 @@ static void handle_request(TSHttpTxn txnp, TSCont contp){
         httpTxnData->tenant = getHeaderStringAttr(bufp, hdr_loc, HEADER_TENANTID, HEADER_TENANTID_LEN);
         if (httpTxnData->user!=NULL && httpTxnData->tenant!=NULL){
             //check whether session exists
-            char* sid = get_session_id(httpTxnData->user, httpTxnData->tenant);
+            char* sid = get_session_id(httpTxnData);
             UserSession* us = find_user_session(sid);
             free(sid);
             if (us!=NULL){
@@ -337,7 +309,7 @@ static void handle_request(TSHttpTxn txnp, TSCont contp){
         }
     }else if (strcmp(HEADER_CMDVAL_STOP, cmdval)==0){
         httpTxnData->reqType = u_stop;
-        httpTxnData->sessionid = getHeaderStringAttr(bufp, hdr_loc, HEADER_SESSIONID, HEADER_SESSIONID_LEN);
+        httpTxnData->sessionid = get_session_id(httpTxnData);
         if (httpTxnData->sessionid!=NULL){
             end_session(txnp, contp);
         }else{
@@ -373,7 +345,6 @@ static void handle_response(TSHttpTxn txnp, TSCont contp) {
                 }
             }else if (txn_data->flag==FLAG_AUTH_SUCC){
                 TSHttpHdrStatusSet(bufp, hdr_loc, TS_HTTP_STATUS_OK);
-                setHeaderStringAttr(bufp, hdr_loc, HEADER_SESSIONID, txn_data->sessionid);
             }else if (txn_data->flag==FLAG_NORMAL){
                 goon = false; //continue will be re-enabled by callback
                 long l_req_cnt_len = TSHttpTxnClientRespHdrBytesGet(txnp) + TSHttpTxnClientRespBodyBytesGet(txnp);
@@ -391,6 +362,7 @@ static void handle_response(TSHttpTxn txnp, TSCont contp) {
     }
 }
 
+//added the rsp length to used
 static void postprocess_any_request(TSHttpTxn txnp, TSCont contp){
 	
 	long clientRspHdrBytes = TSHttpTxnClientRespHdrBytesGet(txnp);
@@ -398,52 +370,65 @@ static void postprocess_any_request(TSHttpTxn txnp, TSCont contp){
 	long len = clientRspHdrBytes+clientRspBdyBytes;
 	HttpTxnData* txnData = TSContDataGet(contp);
 	if (txnData->reqType==u_start && txnData->flag==FLAG_AUTH_FAILED){
-		//failed in start-authentication
+		//no op for start and failed
 	}else{
-		if (txnData->sessionid!=NULL){
-			UserSession* us = find_user_session(txnData->sessionid);
-			if (us!=NULL){
-				pthread_mutex_lock(&us->us_lock);
-				if (us->dserver_error){
-					us->errorUsed+=len;
-					TSDebug(DEBUG_NAME, "postprocess any request, session id:%s, usage this time:%ld, errorUsed:%llu",
-							txnData->sessionid, len, us->errorUsed);
+		if (txnData->reqType==u_stop){
+			//no op for stop
+		}else{
+			if (txnData->sessionid!=NULL){
+				UserSession* us = find_user_session(txnData->sessionid);
+				if (us!=NULL){
+					pthread_mutex_lock(&us->us_lock);
+					if (us->dserver_error){
+						us->errorUsed+=len;
+						TSDebug(DEBUG_NAME, "postprocess any request, session id:%s, usage this time:%ld, errorUsed:%llu",
+								txnData->sessionid, len, us->errorUsed);
+					}else{
+						us->leftQuota-=len;
+						TSDebug(DEBUG_NAME, "postprocess any request, session id:%s, usage this time:%ld, leftQuota:%lld",
+								txnData->sessionid, len, us->leftQuota);
+					}
+					pthread_mutex_unlock(&us->us_lock);
 				}else{
-					us->leftQuota-=len;
-					TSDebug(DEBUG_NAME, "postprocess any request, session id:%s, usage this time:%ld, leftQuota:%lld",
-							txnData->sessionid, len, us->leftQuota);
+					TSDebug(DEBUG_NAME, "postprocess any request, session not found for %s, usage this time:%ld",
+							txnData->sessionid, len);
 				}
-				pthread_mutex_unlock(&us->us_lock);
-			}else{
-				TSDebug(DEBUG_NAME, "postprocess any request, session not found for %s",
-						txnData->sessionid);
 			}
 		}
 	}
 }
 
-static int tr_plugin(TSCont contp, TSEvent event, void *edata)
+static int tr_plugin(TSCont txn_contp, TSEvent event, void *edata)
 {
     TSHttpTxn txnp = (TSHttpTxn) edata;
-    HttpTxnData *txn_data = TSContDataGet(contp);
+    HttpTxnData *txn_data = TSContDataGet(txn_contp);
     
     //debugBytes(txnp, event);
     switch (event) {
         case TS_EVENT_HTTP_READ_REQUEST_HDR:
-            handle_request(txnp, contp);
+            handle_request(txnp, txn_contp);
+			
+			//will be removed, for analyzing
+			//TSHttpTxnHookAdd(txnp, TS_HTTP_REQUEST_TRANSFORM_HOOK, txn_contp);
+			//TSHttpTxnHookAdd(txnp, TS_HTTP_RESPONSE_TRANSFORM_HOOK, txn_contp);
+			//TSHttpTxnHookAdd(txnp, TS_HTTP_RESPONSE_CLIENT_HOOK, txn_contp);
+			
             return 0;
         case TS_EVENT_HTTP_SEND_RESPONSE_HDR:
-            handle_response(txnp, contp);
+            handle_response(txnp, txn_contp);
             return 0;
         case TS_EVENT_HTTP_TXN_CLOSE:
-            postprocess_any_request(txnp, contp);
+            postprocess_any_request(txnp, txn_contp);
             http_txn_data_free(txn_data);
-            TSContDestroy(contp);
+            TSContDestroy(txn_contp);
             TSHttpTxnReenable(txnp, TS_EVENT_HTTP_CONTINUE);
             return 0;
-        default:
-            TSAssert(!"Unexpected event");
-            break;
+		default:
+			TSDebug(DEBUG_NAME, "error unexpected event %d handling..\n", event);
+			//
+			TSHttpTxnReenable(txnp, TS_EVENT_HTTP_CONTINUE);
+			return 0;
+			break;
     }
     
     return 0;
@@ -464,10 +449,11 @@ static int tr_global_plugin(TSCont contp, TSEvent event, void *edata){
             /* Registers locally to hook READ_REQUEST and TXN_CLOSE */
             TSHttpTxnHookAdd(txnp, TS_HTTP_READ_REQUEST_HDR_HOOK, txn_contp);
             TSHttpTxnHookAdd(txnp, TS_HTTP_TXN_CLOSE_HOOK, txn_contp);
+
             break;
             
-        default:
-            TSAssert(!"Unexpected event");
+		default:
+			TSDebug(DEBUG_NAME, "error unexpected event %d handling..\n", event);
             break;
     }
     

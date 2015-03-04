@@ -13,10 +13,10 @@ UserSessionDL* user_session_dlinkedlist = NULL;
 int user_session_count_stat = 0;
 const char id_sep = '|';
 
-UserSession* user_session_alloc(char* userid, char* tenantId){
+UserSession* user_session_alloc(HttpTxnData* txnp){
     //set the sid
     UserSession* us = malloc(sizeof(UserSession));
-    us->sid = get_session_id(userid, tenantId);
+    us->sid = get_session_id(txnp);
     us->grantedQuota=0;
     us->leftQuota=0;
     us->dserver_error=false;
@@ -27,9 +27,10 @@ UserSession* user_session_alloc(char* userid, char* tenantId){
     return us;
 }
 
-char* get_session_id(char* userid, char* tenantId){
-    char* sid = malloc(strlen(userid)+1+strlen(tenantId)+1);
-    sprintf(sid, "%s%c%s", userid, id_sep, tenantId);
+char* get_session_id(HttpTxnData* txnp){
+	char* sid = strdup(txnp->clientip);
+    //char* sid = malloc(strlen(userid)+1+strlen(tenantId)+1);
+    //sprintf(sid, "%s%c%s", userid, id_sep, tenantId);
     return sid;
 }
 
@@ -106,7 +107,6 @@ void update_user_session(UserSession* us){
     }
 }
 
-//manage DiamTxnData
 DiamTxnData* dtxn_alloc(TSHttpTxn txnp, TSCont contp, bool httpReq, d_req_type type){
     DiamTxnData* data = TSmalloc(sizeof(DiamTxnData));
     data->txnp=txnp;
@@ -145,6 +145,7 @@ HttpTxnData * http_txn_data_alloc() {
     data->flag = FLAG_NORMAL;
     data->user=NULL;
     data->tenant = NULL;
+	data->clientip=NULL;
     data->sessionid=NULL;
     return data;
 }
@@ -156,9 +157,36 @@ void http_txn_data_free(HttpTxnData *data) {
     if (data->tenant!=NULL){
         TSfree(data->tenant);
     }
+	if (data->clientip!=NULL){
+		TSfree(data->clientip);
+	}
     if (data->sessionid!=NULL){
         TSfree(data->sessionid);
     }
     TSfree(data);
 }
 
+char* getClientIpStr(TSHttpTxn txnp){
+	/*
+	 struct sockaddr const* incoming_addr = TSHttpTxnIncomingAddrGet(txnp);
+	 struct sockaddr_in *netaddr = (struct sockaddr_in*)incoming_addr;
+	 char* incoming_addr_str = malloc(INET6_ADDRSTRLEN);
+	 const char* ptr = inet_ntop(netaddr->sin_family, &netaddr->sin_addr, incoming_addr_str, INET6_ADDRSTRLEN);
+	 if (ptr!=NULL){
+	 TSDebug(DEBUG_NAME, "incomingAddr: %s", incoming_addr_str);
+	 }else{
+	 TSDebug(DEBUG_NAME, "failed: incomingAddr ip: after inet_ntop: %s, with reason %s", incoming_addr_str, strerror(errno));
+	 }
+	 */
+	
+	struct sockaddr const* client_addr = TSHttpTxnClientAddrGet(txnp);
+	struct sockaddr_in *netaddr = (struct sockaddr_in*)client_addr;
+	char* client_addr_str = malloc(INET6_ADDRSTRLEN);
+	const char* ptr = inet_ntop(netaddr->sin_family, &netaddr->sin_addr, client_addr_str, INET6_ADDRSTRLEN);
+	if (ptr!=NULL){
+	}else{
+		TSDebug(DEBUG_NAME, "failed: clientAddr ip: after inet_ntop: %s, with reason %s", client_addr_str, strerror(errno));
+	}
+	
+	return client_addr_str;
+}

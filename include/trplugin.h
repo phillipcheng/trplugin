@@ -40,6 +40,7 @@ typedef struct {
     int errid; //the text reason of failure
     char* user;
     char* tenant;
+	char* clientip;
     char* sessionid;
     u_req_type reqType;//user req type: start, use, stop
 } HttpTxnData;
@@ -103,14 +104,18 @@ extern UserSessionHM* user_session_hashmap;
 extern UserSessionDL* user_session_dlinkedlist;
 extern int user_session_count_stat;//TSStat on user session
 
-UserSession * user_session_alloc(char* userid, char* tenantid);
-char* get_session_id(char* userid, char* tenantid);
+UserSession * user_session_alloc(HttpTxnData* txnp);
+char* get_session_id(HttpTxnData* txnp);
 void add_user_session(UserSession* us);
 void delete_user_session(char* sid);
 UserSession* find_user_session(char* sid);
 void update_user_session(UserSession* ushm);
 
 void* checkSessionTimeout(void* ptr);
+
+char* getClientIpStr(TSHttpTxn txnp);
+
+int dcinit(int argc, char * argv[]);
 
 //
 extern const char* HEADER_CMD;
@@ -125,9 +130,6 @@ extern const int HEADER_USERID_LEN;
 //
 extern const char* HEADER_TENANTID;
 extern const int HEADER_TENANTID_LEN;
-//
-extern const char* HEADER_SESSIONID;
-extern const int HEADER_SESSIONID_LEN;
 //
 extern const char* RSP_HEADER_REASON;//header field name
 extern int RSP_REASON_VAL_SUCCESS;

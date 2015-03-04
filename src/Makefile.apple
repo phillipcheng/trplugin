@@ -35,8 +35,8 @@ install:
 	mkdir -p $(TR_INSTALL_DIR)/conf
 	cp $(TR_EXE) $(TR_INSTALL_DIR)/lib/$(TR_EXE)
 	chmod 0755 $(TR_INSTALL_DIR)/lib/$(TR_EXE)
-	cp $(TR_CONF) $(TR_INSTALL_DIR)/conf
-	cp $(TR_PLUGIN_CONF) $(ATS_DIR)/etc/trafficserver/
+#	cp $(TR_CONF) $(TR_INSTALL_DIR)/conf
+#	cp $(TR_PLUGIN_CONF) $(ATS_DIR)/etc/trafficserver/
 
 uninstall:
 	rm $(TR_INSTALL_DIR)/lib/$(TR_EXE)
