@@ -263,10 +263,8 @@ const char* getFlagString(int flag){
 }
 
 static void handle_request(TSHttpTxn txnp, TSCont contp){
-    uint32_t sesscnt=0;
-    fd_sess_getcount(&sesscnt);
 	
-    TSDebug(DEBUG_NAME, "handle_request called, %d diameter sessions ......\n", sesscnt);
+    TSDebug(DEBUG_NAME, "handle_request called... \n");
 	
     TSMBuffer bufp=NULL;
     TSMLoc hdr_loc=NULL;
@@ -469,6 +467,8 @@ void TSPluginInit(int argc, const char *argv[])
     
     //warning is ok
     dcinit(argc, argv);
+	
+	dsinit();
     
     TSCont    cont = TSContCreate(tr_global_plugin, NULL);
     TSHttpHookAdd(TS_HTTP_TXN_START_HOOK, cont);

@@ -9,6 +9,46 @@
 
 #define TEST_APP_SID_OPT  "app_test"
 
+/* The following are used to generate sid values that are eternaly unique */
+static uint32_t   	sid_h;	/* initialized to the current time in fd_sess_init */
+static uint32_t   	sid_l;	/* incremented each time a session id is created */
+static pthread_mutex_t 	sid_lock = PTHREAD_MUTEX_INITIALIZER;
+
+void dsinit(){
+	/* Initialize the global counters */
+	sid_h = (uint32_t) time(NULL);
+	sid_l = 0;
+}
+
+char* get_sid(DiamId_t diamid, size_t diamidlen, uint8_t * opt, size_t optlen){
+	char* sid=NULL;
+	size_t sidlen;
+	
+	uint32_t sid_h_cpy;
+	uint32_t sid_l_cpy;
+	/* "<diamId>;<high32>;<low32>[;opt]" */
+	sidlen = diamidlen;
+	sidlen += 22; /* max size of ';<high32>;<low32>' */
+	if (opt)
+		sidlen += 1 + optlen; /* ';opt' */
+	sidlen++; /* space for the final \0 also */
+	sid = malloc(sidlen);
+	
+	pthread_mutex_lock(&sid_lock);
+	if ( ++sid_l == 0 ) /* overflow */
+		++sid_h;
+	sid_h_cpy = sid_h;
+	sid_l_cpy = sid_l;
+	pthread_mutex_unlock(&sid_lock);
+	
+	if (opt) {
+		sidlen = snprintf((char*)sid, sidlen, "%.*s;%u;%u;%.*s", (int)diamidlen, diamid, sid_h_cpy, sid_l_cpy, (int)optlen, opt);
+	} else {
+		sidlen = snprintf((char*)sid, sidlen, "%.*s;%u;%u", (int)diamidlen, diamid, sid_h_cpy, sid_l_cpy);
+	}
+	return sid;
+}
+
 /* Cb called when an answer is received */
 void ta_cb_ans(void * data, struct msg ** msg)
 {
@@ -70,7 +110,7 @@ void ta_cb_ans(void * data, struct msg ** msg)
         TSDebug(DEBUG_NAME, "fatal processing recieve msg. dtxn_data is NULL.");
     }
 	
-    //Free the message, it will free the session associated with it
+	//Free the message, it will free the session associated with it
 	CHECK_FCT_DO(fd_msg_free(*msg), return);
 	*msg = NULL;
 
@@ -83,30 +123,26 @@ void d_cli_send_msg(DiamTxnData * dtxn_data)
 	struct msg * req = NULL;
 	struct avp * avp;
 	union avp_value val;
-	struct session *sess = NULL;
     
 	//create the request
 	CHECK_FCT_DO( fd_msg_new( ta_cmd_r, MSGFL_ALLOC_ETEID, &req ), goto out );
 
     TSDebug(DEBUG_NAME, "Creating a new message for sending.\n");
     if (dtxn_data->reqType==d_start){
-        // Create a new request-session
-        CHECK_FCT_DO( fd_msg_new_session( req, (os0_t)TEST_APP_SID_OPT, CONSTSTRLEN(TEST_APP_SID_OPT) ), goto out );
-        //set diameter session id in the DiamTxnData
-        CHECK_FCT_DO( fd_msg_sess_get(fd_g_config->cnf_dict, req, &sess, NULL), goto out );
-        os0_t sid;
-        size_t len;
-        fd_sess_getsid(sess, &sid, &len);
-        dtxn_data->d1sid=os0dup_int(sid, len);
-    }else{
-        //init the message with given session id
-        fd_msg_avp_new( ta_sess_id, 0, &avp);
-        memset(&val, 0, sizeof(val));
-        val.os.data = (os0_t)dtxn_data->d1sid;
-        val.os.len  = strlen(dtxn_data->d1sid);
-        fd_msg_avp_setvalue( avp, &val );
-        fd_msg_avp_add( req, MSG_BRW_FIRST_CHILD, avp );
+        //create the diameter session id, will be release while clean dtxn_data up
+		dtxn_data->d1sid = get_sid(fd_g_config->cnf_diamid, fd_g_config->cnf_diamid_len,(os0_t)TEST_APP_SID_OPT, CONSTSTRLEN(TEST_APP_SID_OPT));
     }
+	
+	TSDebug(DEBUG_NAME, "sid:%s\n", dtxn_data->d1sid);
+	
+	//init the message with given session id
+	fd_msg_avp_new( ta_sess_id, 0, &avp);
+	memset(&val, 0, sizeof(val));
+	val.os.data = (os0_t)dtxn_data->d1sid;
+	val.os.len  = strlen(dtxn_data->d1sid);
+	fd_msg_avp_setvalue( avp, &val );
+	fd_msg_avp_add( req, MSG_BRW_FIRST_CHILD, avp );
+	
 	/* Set the Destination-Realm AVP */
 	{
 		CHECK_FCT_DO( fd_msg_avp_new ( ta_dest_realm, 0, &avp ), goto out  );

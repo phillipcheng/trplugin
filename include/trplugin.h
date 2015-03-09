@@ -115,7 +115,9 @@ void* checkSessionTimeout(void* ptr);
 
 char* getClientIpStr(TSHttpTxn txnp);
 
-int dcinit(int argc, char * argv[]);
+int dcinit(int argc, char * argv[]); //open diameter client initialization
+
+void dsinit(); //diameter session id initialization, since diameter session id is client generated global unique id.
 
 //
 extern const char* HEADER_CMD;
