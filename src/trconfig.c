@@ -21,10 +21,10 @@ static int tr_conf_init(void)
     
     /* Set the default values */
     tr_conf->diameterVendorId  = 999999;		/* Dummy value */
-    tr_conf->diameterAppId   = 0xffffff;	/* dummy value */
-    tr_conf->diameterCmdId     = 0xfffffe;	/* Experimental */
+    tr_conf->diameterAppId   = 16777215;	/* dummy value */
+    tr_conf->diameterCmdId     = 16777214;	/* Experimental */
     tr_conf->diameterDestRealm = strdup(fd_g_config->cnf_diamrlm);
-    tr_conf->diameterDestHost  = NULL;
+    tr_conf->diameterDestHost  = strdup("id1.mymac");
     tr_conf->minRequestQuota = 1*1024*1024;
     tr_conf->usTimeout = 3*60;
     tr_conf->usTimeoutCheckInterval=60;
@@ -32,26 +32,19 @@ static int tr_conf_init(void)
     //read configuration from dc_conffile
     if (dc_conffile!=NULL){
         cfg_opt_t opts[] ={
-            CFG_INT("diameterVendorId", 999999, CFGF_NONE),
-            CFG_INT("diameterAppId", 16777215, CFGF_NONE),
-			CFG_INT("diameterCmdId", 16777214, CFGF_NONE),
-			CFG_STR("diameterDestHost", NULL, CFGF_NONE),
-            CFG_INT("minRequestQuota", 1048576, CFGF_NONE),
-            CFG_INT("usTimeout", 180, CFGF_NONE),
-            CFG_INT("usTimeoutCheckInterval", 60, CFGF_NONE),
+            CFG_SIMPLE_INT("diameterVendorId", &tr_conf->diameterVendorId),
+            CFG_SIMPLE_INT("diameterAppId", &tr_conf->diameterAppId),
+			CFG_SIMPLE_INT("diameterCmdId", &tr_conf->diameterCmdId),
+			CFG_SIMPLE_STR("diameterDestHost", &tr_conf->diameterDestHost),
+            CFG_SIMPLE_INT("minRequestQuota", &tr_conf->minRequestQuota),
+            CFG_SIMPLE_INT("usTimeout", &tr_conf->usTimeout),
+            CFG_SIMPLE_INT("usTimeoutCheckInterval", &tr_conf->usTimeoutCheckInterval),
             CFG_END()
         };
         cfg_t *cfg;
         cfg = cfg_init(opts, CFGF_NONE);
         if(cfg_parse(cfg, tr_conffile) == CFG_PARSE_ERROR)
             return 1;
-        tr_conf->diameterVendorId = (unsigned int)cfg_getint(cfg, "diameterVendorId");
-        tr_conf->diameterAppId = (unsigned int)cfg_getint(cfg, "diameterAppId");
-        tr_conf->diameterCmdId = (unsigned int)cfg_getint(cfg, "diameterCmdId");
-		tr_conf->diameterDestHost = cfg_getstr(cfg, "diameterDestHost");
-        tr_conf->minRequestQuota = cfg_getint(cfg, "minRequestQuota");
-        tr_conf->usTimeout = cfg_getint(cfg, "usTimeout");
-        tr_conf->usTimeoutCheckInterval = (unsigned int)cfg_getint(cfg, "usTimeoutCheckInterval");
         cfg_free(cfg);
     }
     
