@@ -11,7 +11,7 @@ OBJS_PLUGIN	= $(SRC_PLUGIN:.c=.o)
 
 TR_EXE	= trplugin.so
 TR_CONF = ../conf/tr.conf ../conf/fd1.conf
-TR_PLUGIN_CONF = ../conf/plugin.config
+TR_PLUGIN_CONF = ../conf/plugin.config ../conf/records.config
 
 all: $(TR_EXE)
 
